@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Calculadora Checkup - Cadastro CD</title>
+    <!-- Importando um pacote visual pronto (Bootstrap) para a tela não ficar feia -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <!-- Receptor de Popups (Flash Messages) -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} alert-dismissible fade show shadow fw-bold"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+      <div class="mb-3">
+        <a href="/" class="btn btn-outline-secondary"
+          >← Voltar para o Dashboard</a
+        >
+      </div>
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h3 class="mb-0">Cadastrar Nova Base Operacional</h3>
+        </div>
+        <div class="card-body">
+          <form action="#" method="POST">
+            <div class="mb-3">
+              <div class="d-flex justify-content-end mb-3"></div>
+              <label class="form-label fw-bold"
+                >Nome do CD (Ex: CD Jandira)</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                name="nome_cd"
+                placeholder="Digite o nome da base"
+              />
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"
+                  >Metragem Total do Galpão (m²)</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  name="metragem_m2"
+                  placeholder="Ex: 1000"
+                />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold"
+                  >Posições Porta-Palete (Capacidade)</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  name="capacidade_paletes"
+                  placeholder="Deixe 0 se não houver"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-success w-100 fw-bold">
+              Salvar Cadastro do CD
+            </button>
+          </form>
+        </div>
+        <!-- Tabela de Bases Cadastradas -->
+        <div class="card shadow mt-4">
+          <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">Bases Operacionais Cadastradas</h4>
+          </div>
+          <div class="card-body">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome do CD</th>
+                  <th>Metragem (m²)</th>
+                  <th>Capacidade (Paletes)</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- O Python vai repetir essa linha para cada CD no banco -->
+                {% for cd in cds %}
+                <tr>
+                  <td><strong>#{{ cd.id }}</strong></td>
+                  <td>{{ cd.nome }}</td>
+                  <td>{{ cd.metragem }}</td>
+                  <td>{{ cd.capacidade_paletes }}</td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <a
+                        href="{{ url_for('editar_cd', cd_id=cd.id) }}"
+                        class="btn btn-sm btn-warning fw-bold"
+                        >Editar</a
+                      >
+                      <form
+                        action="{{ url_for('excluir_cd', cd_id=cd.id) }}"
+                        method="POST"
+                        onsubmit="return confirm('Tem certeza que deseja excluir esta Base Operacional?');"
+                      >
+                        <button
+                          type="submit"
+                          class="btn btn-sm btn-danger fw-bold"
+                        >
+                          Excluir
+                        </button>
+                      </form>
+
+                      <a
+                        href="/custos/{{ cd.id }}"
+                        class="btn btn-sm btn-primary"
+                        >Gerenciar Custos</a
+                      >
+                      <a
+                        href="/rentabilidade/{{ cd.id }}"
+                        class="btn btn-sm btn-success"
+                        >Ver Rentabilidade</a
+                      >
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Motor de interatividade do Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

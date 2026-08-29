@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - Visão Global</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <div class="d-flex justify-content-between mb-4">
+        <h2 class="fw-bold text-dark">Visão Geral da Rede</h2>
+        <a href="/cadastro" class="btn btn-success fw-bold"
+          >+ Gerenciar Bases Operacionais</a
+        >
+      </div>
+
+      <!-- Indicadores Globais (Cards Superiores) -->
+      <div class="row text-center mb-4">
+        <div class="col-md-4">
+          <div class="card shadow border-primary h-100">
+            <div class="card-body bg-primary text-white rounded">
+              <h6 class="text-uppercase mb-2">Custo Fixo Total (Ociosidade)</h6>
+              <h1>R$ {{ total_rede | moeda_br }}</h1>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow border-secondary h-100">
+            <div class="card-body bg-secondary text-white rounded">
+              <h6 class="text-uppercase mb-2">Capacidade Total da Rede</h6>
+              <h1>
+                {{ capacidade_rede }} <small class="fs-5">unidades</small>
+              </h1>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow border-dark h-100">
+            <div class="card-body bg-dark text-warning rounded">
+              <h6 class="text-uppercase mb-2">
+                Custo Médio da Posição na Rede
+              </h6>
+              <h1>R$ {{ media_rede | moeda_br }}</h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Comparativa de Bases -->
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h4 class="mb-0">Desempenho por Base Operacional</h4>
+        </div>
+        <div class="card-body">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Centro de Distribuição</th>
+                <th>Capacidade (un.)</th>
+                <th>Custo Fixo Total</th>
+                <th>Custo da Posição (Individual)</th>
+                <th>Status de Custo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for base in bases %}
+              <tr>
+                <td><strong>{{ base.nome }}</strong></td>
+                <td>{{ base.capacidade }}</td>
+                <td>R$ {{ base.custo_total | moeda_br }}</td>
+                <td class="fw-bold">R$ {{ base.custo_unitario | moeda_br }}</td>
+                <td>
+                  <!-- Lógica de semáforo: Compara a base com a média global -->
+                  {% if base.custo_unitario > media_rede %}
+                  <span class="badge bg-danger">Acima da Média</span>
+                  {% else %}
+                  <span class="badge bg-success">Eficiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rentabilidade de Clientes - {{ cd.nome }}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <div class="d-flex justify-content-between mb-3">
+        <a href="/" class="btn btn-outline-secondary">← Voltar para CDs</a>
+        <h5 class="text-secondary">
+          Custo Base Atual da Posição:
+          <strong>R$ {{ custo_posicao | moeda_br }}</strong>
+        </h5>
+      </div>
+
+      <!-- Formulário de Lançamento -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+          <h3 class="mb-0">Registrar Faturamento do Cliente</h3>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Nome do Cliente</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="nome_cliente"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Mês Referência</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="mes_ref"
+                  placeholder="2026-08"
+                  required
+                />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Faturamento (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="faturamento"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Paletes Usados</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  name="paletes_ocupados"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100 fw-bold">
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabela de Rentabilidade (A Lista Solicitada) -->
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h4 class="mb-0">Análise de Rentabilidade por Cliente</h4>
+        </div>
+        <div class="card-body">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Cliente</th>
+                <th>Mês</th>
+                <th>Faturamento (Receita)</th>
+                <th>Paletes Usados</th>
+                <th>Custo Operacional</th>
+                <th>Lucro Líquido</th>
+                <th>Margem (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for res in resultados %}
+              <tr>
+                <td><strong>{{ res.nome }}</strong></td>
+                <td>{{ res.mes }}</td>
+                <td class="text-success fw-bold">
+                  R$ {{ res.faturamento | moeda_br }}
+                </td>
+                <td>{{ res.paletes }} un.</td>
+                <td class="text-danger">R$ {{ res.custo | moeda_br }}</td>
+                <td><strong>R$ {{ res.lucro | moeda_br }}</strong></td>
+
+                <!-- Regra Visual para a Porcentagem -->
+                <td>
+                  {% if res.margem >= 20 %}
+                  <span class="badge bg-success fs-6"
+                    >{{ "%.1f"|format(res.margem) }}%</span
+                  >
+                  {% elif res.margem > 0 %}
+                  <span class="badge bg-warning text-dark fs-6"
+                    >{{ "%.1f"|format(res.margem) }}%</span
+                  >
+                  {% else %}
+                  <span class="badge bg-danger fs-6"
+                    >{{ "%.1f"|format(res.margem) }}%</span
+                  >
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
