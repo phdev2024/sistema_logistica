@@ -33,14 +33,20 @@ class CustoCD(db.Model):
     tipo_custo = db.Column(db.String(50), nullable=False)      # Fixo, Variável ou Mão de Obra
     valor = db.Column(db.Float, nullable=False)
 
-# Molde para registrar o faturamento e ocupação de cada cliente
+# --- MOLDE 3: OPERAÇÕES DOS CLIENTES (Faturamento e Ocupação) ---
 class OperacaoCliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # A "corda" que liga este cliente a um CD específico
     cd_id = db.Column(db.Integer, db.ForeignKey('centro_distribuicao.id'), nullable=False)
+    
     nome_cliente = db.Column(db.String(100), nullable=False)
-    mes_referencia = db.Column(db.String(7), nullable=False)
-    faturamento = db.Column(db.Float, nullable=False) # A receita gerada
-    paletes_ocupados = db.Column(db.Integer, nullable=False) # O espaço consumido
+    mes_referencia = db.Column(db.String(7), nullable=False) # Ex: "2026-08"
+    
+    faturamento = db.Column(db.Float, nullable=False) # Receita (Dinheiro que entra)
+    paletes_ocupados = db.Column(db.Integer, nullable=False) # Espaço ocupado (Peso morto)
+    
+    # A nova gaveta: Custos diretos deste cliente (stretch, fitas, etc.)
+    custo_variavel = db.Column(db.Float, nullable=False, default=0.0)
 
 # 3. Rota da tela de cadastro
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -207,17 +213,27 @@ def rentabilidade_clientes(cd_id):
     divisor = cd_atual.capacidade_paletes if cd_atual.capacidade_paletes > 0 else cd_atual.metragem
     custo_posicao = total_fixo / divisor if divisor > 0 else 0
 
-    # --- 2. GRAVAÇÃO DO NOVO CLIENTE (Se o usuário enviou o formulário) ---
+   # --- 2. GRAVAÇÃO DO NOVO CLIENTE (Se o usuário enviou o formulário) ---
     if request.method == 'POST':
-        nova_operacao = OperacaoCliente(
-            cd_id=cd_atual.id,
-            nome_cliente=request.form.get('nome_cliente'),
-            mes_referencia=request.form.get('mes_ref'),
-            faturamento=float(request.form.get('faturamento')),
-            paletes_ocupados=int(request.form.get('paletes_ocupados'))
+        
+        # O "or 0" é o nosso escudo. Se o usuário digitar vazio, o Python assume zero e não trava.
+        novo_cliente = OperacaoCliente(
+            cd_id = cd_atual.id,
+            nome_cliente = request.form.get('nome_cliente'),
+            mes_referencia = request.form.get('mes_ref'),
+            faturamento = float(request.form.get('faturamento') or 0),
+            paletes_ocupados = int(request.form.get('paletes_ocupados') or 0),
+            custo_variavel = float(request.form.get('custo_variavel') or 0)
         )
-        db.session.add(nova_operacao)
+        
+        # Batendo o martelo e salvando na tabela
+        db.session.add(novo_cliente)
         db.session.commit()
+        
+        # A Mensagem de Sucesso (Flash)
+        flash(f"Cliente {novo_cliente.nome_cliente} registrado com sucesso!", "success")
+        
+        # Recarrega a tela para limpar o formulário e mostrar a nova linha na tabela
         return redirect(url_for('rentabilidade_clientes', cd_id=cd_id))
     
     # --- 3. MATEMÁTICA: CALCULANDO O LUCRO DE CADA CLIENTE DA LISTA ---
@@ -225,8 +241,8 @@ def rentabilidade_clientes(cd_id):
     lista_resultados = [] # Caixa vazia para guardarmos os resultados finais
     
     for op in operacoes_banco:
-        # Custo do Cliente = Paletes que ele usa VEZES o custo da posição do CD
-        custo_do_cliente = op.paletes_ocupados * custo_posicao
+        # Custo do Cliente = (Espaço Fixo) + (Suor/Variável Direto)
+        custo_do_cliente = (op.paletes_ocupados * custo_posicao) + op.custo_variavel
         
         # Lucro = Receita (Faturamento) MENOS Custo do Cliente
         lucro_real = op.faturamento - custo_do_cliente
@@ -236,6 +252,7 @@ def rentabilidade_clientes(cd_id):
         
         # Guardando tudo empacotado para enviar para a tela
         lista_resultados.append({
+            'id': op.id, # <-- ADICIONE ESTA LINHA PARA O SISTEMA RECONHECER O CLIENTE
             'nome': op.nome_cliente,
             'mes': op.mes_referencia,
             'faturamento': op.faturamento,
@@ -249,48 +266,147 @@ def rentabilidade_clientes(cd_id):
 
 @app.route('/')
 def painel_gerencial():
-    # 1. Buscando todos os CDs da rede
     todos_cds = CentroDistribuicao.query.all()
+    todas_operacoes = OperacaoCliente.query.all()
     
-    # Caixas vazias para os totais globais
-    total_custo_rede = 0
-    total_capacidade_rede = 0
-    resumo_bases = [] 
+    # 1. Calculando quanto espaço já vendemos
+    espaco_vendido_por_cd = {}
+    for op in todas_operacoes:
+        espaco_vendido_por_cd[op.cd_id] = espaco_vendido_por_cd.get(op.cd_id, 0) + op.paletes_ocupados
 
-    # 2. O Loop de Varredura
+    # Novas Gavetas Separadas por Grandeza
+    capacidade_paletes_rede = 0
+    custo_rede_paletes = 0
+    
+    capacidade_m2_rede = 0
+    custo_rede_m2 = 0
+    
+    custo_ociosidade_global = 0
+    resumo_bases = [] 
+    memoria_custo_cd = {}
+
+    # 2. O Loop de Separação Inteligente (Paletes vs m²)
     for cd in todos_cds:
-        # Pega apenas os custos fixos (ociosidade) deste CD
         custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
         soma_fixo = sum(conta.valor for conta in custos_fixos_cd)
         
-        # Define se a capacidade é medida em paletes ou m²
-        divisor = cd.capacidade_paletes if cd.capacidade_paletes > 0 else cd.metragem
-        
-        # Calcula o custo da posição deste CD específico
+        # A BIFURCAÇÃO LÓGICA
+        if cd.capacidade_paletes > 0:
+            divisor = cd.capacidade_paletes
+            unidade = "Paletes"
+            capacidade_paletes_rede += divisor
+            custo_rede_paletes += soma_fixo
+        else:
+            divisor = cd.metragem
+            unidade = "m²"
+            capacidade_m2_rede += divisor
+            custo_rede_m2 += soma_fixo
+            
         custo_unitario = soma_fixo / divisor if divisor > 0 else 0
+        memoria_custo_cd[cd.id] = custo_unitario
         
-        # Alimenta os totais da rede
-        total_custo_rede += soma_fixo
-        total_capacidade_rede += divisor
+        espaco_vendido = espaco_vendido_por_cd.get(cd.id, 0)
+        espaco_vazio = divisor - espaco_vendido
+        if espaco_vazio < 0: 
+            espaco_vazio = 0
         
-        # Empacota o resumo desta base para enviar à tela
+        dinheiro_queimado = espaco_vazio * custo_unitario
+        custo_ociosidade_global += dinheiro_queimado
+        
         resumo_bases.append({
             'nome': cd.nome,
             'custo_total': soma_fixo,
             'capacidade': divisor,
-            'custo_unitario': custo_unitario
+            'unidade': unidade,
+            'custo_unitario': custo_unitario,
+            'espaco_vazio': espaco_vazio
         })
         
-    # 3. Calcula a média geral da empresa
-    custo_medio_rede = total_custo_rede / total_capacidade_rede if total_capacidade_rede > 0 else 0
+    # 3. As Médias Independentes
+    media_palete = custo_rede_paletes / capacidade_paletes_rede if capacidade_paletes_rede > 0 else 0
+    media_m2 = custo_rede_m2 / capacidade_m2_rede if capacidade_m2_rede > 0 else 0
 
+    # 4. Investigação Global dos Clientes
+    faturamento_global = 0
+    custo_operacional_global = 0
+    total_variavel_global = 0 # NOVA GAVETA
+    clientes_rentaveis = 0
+    clientes_atencao = 0
+    clientes_deficitarios = 0
+
+    for op in todas_operacoes:
+        faturamento_global += op.faturamento
+        custo_base_cliente = memoria_custo_cd.get(op.cd_id, 0)
+        custo_total_cliente = (op.paletes_ocupados * custo_base_cliente) + op.custo_variavel
+        
+        custo_operacional_global += custo_total_cliente
+        total_variavel_global += op.custo_variavel # ALIMENTANDO A GAVETA
+        
+        lucro = op.faturamento - custo_total_cliente
+        margem = (lucro / op.faturamento * 100) if op.faturamento > 0 else 0
+        
+        if margem >= 20: 
+            clientes_rentaveis += 1
+        elif margem > 0: 
+            clientes_atencao += 1
+        else: 
+            clientes_deficitarios += 1
+            
+    lucro_global = faturamento_global - custo_operacional_global
+    margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
+
+# 5. O Cálculo do Ponto de Equilíbrio (Break-even)
+    
+    # A Ordem: "Computador, some os custos de Paletes e m² para descobrirmos o Custo Fixo Total real da rede"
+    total_custo_rede = custo_rede_paletes + custo_rede_m2
+    
+    margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
+    
+    # Agora a variável 'total_custo_rede' existe e a matemática funciona perfeitamente
+    ponto_equilibrio = total_custo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
     return render_template(
         'dashboard.html',
-        total_rede=total_custo_rede,
-        capacidade_rede=total_capacidade_rede,
-        media_rede=custo_medio_rede,
-        bases=resumo_bases
+        media_palete=media_palete,
+        media_m2=media_m2,
+        bases=resumo_bases,
+        faturamento=faturamento_global,
+        custo_ops=custo_operacional_global,
+        margem=margem_global,
+        rentaveis=clientes_rentaveis,
+        atencao=clientes_atencao,
+        deficitarios=clientes_deficitarios,
+        custo_ociosidade=custo_ociosidade_global,
+        ponto_equilibrio=ponto_equilibrio # ENVIANDO PARA A TELA
     )
+
+# Rota para deletar um cliente lançado errado
+@app.route('/excluir_cliente/<int:cliente_id>', methods=['POST'])
+def excluir_cliente(cliente_id):
+    cliente_para_apagar = OperacaoCliente.query.get_or_404(cliente_id)
+    cd_de_origem = cliente_para_apagar.cd_id
+    
+    db.session.delete(cliente_para_apagar)
+    db.session.commit()
+    
+    return redirect(url_for('rentabilidade_clientes', cd_id=cd_de_origem))
+
+# Rota para editar os dados de faturamento e ocupação
+@app.route('/editar_cliente/<int:cliente_id>', methods=['GET', 'POST'])
+def editar_cliente(cliente_id):
+    cliente_atual = OperacaoCliente.query.get_or_404(cliente_id)
+    
+    if request.method == 'POST':
+        cliente_atual.nome_cliente = request.form.get('nome_cliente')
+        cliente_atual.mes_referencia = request.form.get('mes_ref')
+        cliente_atual.faturamento = float(request.form.get('faturamento') or 0)
+        cliente_atual.paletes_ocupados = int(request.form.get('paletes_ocupados') or 0)
+        cliente_atual.custo_variavel = float(request.form.get('custo_variavel') or 0)
+        custo_variavel = db.Column(db.Float, nullable=False, default=0.0) # A NOVA GAVETA
+        
+        db.session.commit()
+        return redirect(url_for('rentabilidade_clientes', cd_id=cliente_atual.cd_id))
+        
+    return render_template('editar_cliente.html', cliente=cliente_atual)
 
 if __name__ == '__main__':
     # 4. Ordem para criar o arquivo do banco antes de ligar o servidor

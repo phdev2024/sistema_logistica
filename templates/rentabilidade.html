@@ -15,7 +15,9 @@
   <body class="bg-light">
     <div class="container mt-5">
       <div class="d-flex justify-content-between mb-3">
-        <a href="/" class="btn btn-outline-secondary">← Voltar para CDs</a>
+        <a href="/cadastro" class="btn btn-outline-secondary"
+          >← Voltar para Cadastros</a
+        >
         <h5 class="text-secondary">
           Custo Base Atual da Posição:
           <strong>R$ {{ custo_posicao | moeda_br }}</strong>
@@ -28,55 +30,46 @@
           <h3 class="mb-0">Registrar Faturamento do Cliente</h3>
         </div>
         <div class="card-body">
-          <form method="POST">
-            <div class="row">
-              <div class="col-md-3 mb-3">
-                <label class="form-label fw-bold">Nome do Cliente</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  name="nome_cliente"
-                  required
-                />
-              </div>
-              <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Mês Referência</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  name="mes_ref"
-                  placeholder="2026-08"
-                  required
-                />
-              </div>
-              <div class="col-md-3 mb-3">
-                <label class="form-label fw-bold">Faturamento (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  class="form-control"
-                  name="faturamento"
-                  required
-                />
-              </div>
-              <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Paletes Usados</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  name="paletes_ocupados"
-                  required
-                />
-              </div>
-              <div class="col-md-2 mb-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-success w-100 fw-bold">
-                  Salvar
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+          <!-- Início do Formulário de Lançamento de Cliente -->
+<form method="POST">
+  <div class="row align-items-end">
+      <!-- Caixa 1: Nome do Cliente (Ocupa 3 de 12 espaços) -->
+      <div class="col-md-3 mb-3">
+          <label class="form-label fw-bold">Nome do Cliente</label>
+          <input type="text" class="form-control" name="nome_cliente" required>
       </div>
+      
+      <!-- Caixa 2: Mês (Ocupa 2 de 12 espaços) -->
+      <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Mês Referência</label>
+          <input type="text" class="form-control" name="mes_ref" placeholder="2026-08" required>
+      </div>
+      
+      <!-- Caixa 3: Faturamento (Ocupa 2 de 12 espaços) -->
+      <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Faturamento (R$)</label>
+          <input type="number" step="0.01" class="form-control" name="faturamento" required>
+      </div>
+      
+      <!-- Caixa 4: Paletes Usados (Ocupa 2 de 12 espaços) -->
+      <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Paletes Usados</label>
+          <input type="number" class="form-control" name="paletes_ocupados" required>
+      </div>
+      
+      <!-- Caixa 5: O novo Custo Variável (Ocupa 2 de 12 espaços) -->
+      <div class="col-md-2 mb-3">
+          <label class="form-label fw-bold">Custo Variável (R$)</label>
+          <!-- A trava de segurança value="0.00" já vem preenchida -->
+          <input type="number" step="0.01" class="form-control" name="custo_variavel" value="0.00" required>
+      </div>
+      
+      <!-- Caixa 6: Botão Salvar (Ocupa a linha inteira de baixo) -->
+      <div class="col-12 mt-2">
+          <button type="submit" class="btn btn-empresa w-100 fw-bold">Salvar Cliente e Calcular Margem</button>
+      </div>
+  </div>
+</form>
 
       <!-- Tabela de Rentabilidade (A Lista Solicitada) -->
       <div class="card shadow">
@@ -94,6 +87,8 @@
                 <th>Custo Operacional</th>
                 <th>Lucro Líquido</th>
                 <th>Margem (%)</th>
+                <th>Ações</th>
+                <!-- NOVA COLUNA -->
               </tr>
             </thead>
             <tbody>
@@ -123,6 +118,29 @@
                     >{{ "%.1f"|format(res.margem) }}%</span
                   >
                   {% endif %}
+                </td>
+                <!-- Ações: Editar e Excluir lado a lado -->
+                <td>
+                  <div class="d-flex gap-2">
+                    <a
+                      href="{{ url_for('editar_cliente', cliente_id=res.id) }}"
+                      class="btn btn-sm btn-primary fw-bold"
+                      >Editar</a
+                    >
+
+                    <form
+                      action="{{ url_for('excluir_cliente', cliente_id=res.id) }}"
+                      method="POST"
+                      onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');"
+                    >
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-danger fw-bold"
+                      >
+                        Excluir
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Editar Cliente</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <div class="card shadow border-primary">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0 fw-bold">Editar Dados do Cliente</h3>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Nome do Cliente</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="nome_cliente"
+                  value="{{ cliente.nome_cliente }}"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Mês Referência</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="mes_ref"
+                  value="{{ cliente.mes_referencia }}"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Faturamento (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="faturamento"
+                  value="{{ cliente.faturamento }}"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-bold">Paletes Usados</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  name="paletes_ocupados"
+                  value="{{ cliente.paletes_ocupados }}"
+                  required
+                />
+              </div>
+              <!-- Custo Variável agora dentro da mesma 'row' -->
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Custo Variável (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="custo_variavel"
+                  value="{{ cliente.custo_variavel }}"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Botões isolados em sua própria linha -->
+            <div class="d-flex justify-content-end gap-3 mt-3">
+              <a
+                href="{{ url_for('rentabilidade_clientes', cd_id=cliente.cd_id) }}"
+                class="btn btn-outline-secundaria fw-bold"
+                >Cancelar</a
+              >
+              <button type="submit" class="btn btn-primary fw-bold">
+                Salvar Alterações
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
