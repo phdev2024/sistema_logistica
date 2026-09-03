@@ -28,7 +28,7 @@ class CentroDistribuicao(db.Model):
 class CustoCD(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cd_id = db.Column(db.Integer, db.ForeignKey('centro_distribuicao.id'), nullable=False)
-    mes_referencia = db.Column(db.String(7), nullable=False)  # Ex: "2026-08"
+    mes_referencia = db.Column(db.String(7), nullable=False)  # Ex: "2026-09"
     descricao_item = db.Column(db.String(150), nullable=False) # Ex: Aluguel, Fita Stretch
     tipo_custo = db.Column(db.String(50), nullable=False)      # Fixo, Variável ou Mão de Obra
     valor = db.Column(db.Float, nullable=False)
@@ -36,17 +36,22 @@ class CustoCD(db.Model):
 # --- MOLDE 3: OPERAÇÕES DOS CLIENTES (Faturamento e Ocupação) ---
 class OperacaoCliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # A "corda" que liga este cliente a um CD específico
     cd_id = db.Column(db.Integer, db.ForeignKey('centro_distribuicao.id'), nullable=False)
+    mes_referencia = db.Column(db.String(7), nullable=False, default="2026-09") # Garantindo a existência da coluna
+    cliente_nome = db.Column(db.String(100), nullable=False)
+    paletes_ocupados = db.Column(db.Float, nullable=False)
     
-    nome_cliente = db.Column(db.String(100), nullable=False)
-    mes_referencia = db.Column(db.String(7), nullable=False) # Ex: "2026-08"
+    # Novas colunas de Faturamento Solicitadas pelo Sócio
+    fat_armazenagem = db.Column(db.Float, default=0.0)
+    fat_transporte = db.Column(db.Float, default=0.0)
+    fat_manuseio = db.Column(db.Float, default=0.0)
     
-    faturamento = db.Column(db.Float, nullable=False) # Receita (Dinheiro que entra)
-    paletes_ocupados = db.Column(db.Integer, nullable=False) # Espaço ocupado (Peso morto)
-    
-    # A nova gaveta: Custos diretos deste cliente (stretch, fitas, etc.)
-    custo_variavel = db.Column(db.Float, nullable=False, default=0.0)
+    custo_variavel = db.Column(db.Float, nullable=False)
+
+    # Propriedade mágica: Soma as três frentes para manter a compatibilidade com o resto do sistema
+    @property
+    def faturamento(self):
+        return self.fat_armazenagem + self.fat_transporte + self.fat_manuseio
 
 # 3. Rota da tela de cadastro
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -215,25 +220,21 @@ def rentabilidade_clientes(cd_id):
 
    # --- 2. GRAVAÇÃO DO NOVO CLIENTE (Se o usuário enviou o formulário) ---
     if request.method == 'POST':
-        
-        # O "or 0" é o nosso escudo. Se o usuário digitar vazio, o Python assume zero e não trava.
         novo_cliente = OperacaoCliente(
             cd_id = cd_atual.id,
-            nome_cliente = request.form.get('nome_cliente'),
+            cliente_nome = request.form.get('nome_cliente'), # Alinhado com o molde: cliente_nome
             mes_referencia = request.form.get('mes_ref'),
-            faturamento = float(request.form.get('faturamento') or 0),
-            paletes_ocupados = int(request.form.get('paletes_ocupados') or 0),
+            paletes_ocupados = float(request.form.get('paletes_ocupados') or 0),
+            fat_armazenagem = float(request.form.get('fat_armazenagem') or 0),
+            fat_transporte = float(request.form.get('fat_transporte') or 0),
+            fat_manuseio = float(request.form.get('fat_manuseio') or 0),
             custo_variavel = float(request.form.get('custo_variavel') or 0)
         )
         
-        # Batendo o martelo e salvando na tabela
         db.session.add(novo_cliente)
         db.session.commit()
         
-        # A Mensagem de Sucesso (Flash)
-        flash(f"Cliente {novo_cliente.nome_cliente} registrado com sucesso!", "success")
-        
-        # Recarrega a tela para limpar o formulário e mostrar a nova linha na tabela
+        flash(f"Cliente {novo_cliente.cliente_nome} registrado com sucesso!", "success")
         return redirect(url_for('rentabilidade_clientes', cd_id=cd_id))
     
     # --- 3. MATEMÁTICA: CALCULANDO O LUCRO DE CADA CLIENTE DA LISTA ---
@@ -252,10 +253,13 @@ def rentabilidade_clientes(cd_id):
         
         # Guardando tudo empacotado para enviar para a tela
         lista_resultados.append({
-            'id': op.id, # <-- ADICIONE ESTA LINHA PARA O SISTEMA RECONHECER O CLIENTE
-            'nome': op.nome_cliente,
+            'id': op.id,
+            'nome': op.cliente_nome,
             'mes': op.mes_referencia,
-            'faturamento': op.faturamento,
+            'fat_arm': op.fat_armazenagem,      # GAVETA 1: Receita de Armazenagem
+            'fat_trans': op.fat_transporte,    # GAVETA 2: Receita de Frete
+            'fat_man': op.fat_manuseio,        # GAVETA 3: Receita de Handling
+            'faturamento': op.faturamento,      # GAVETA TOTAL: Soma calculada pela @property
             'paletes': op.paletes_ocupados,
             'custo': custo_do_cliente,
             'lucro': lucro_real,
@@ -398,10 +402,11 @@ def editar_cliente(cliente_id):
     if request.method == 'POST':
         cliente_atual.nome_cliente = request.form.get('nome_cliente')
         cliente_atual.mes_referencia = request.form.get('mes_ref')
-        cliente_atual.faturamento = float(request.form.get('faturamento') or 0)
+        cliente_atual.fat_armazenagem = float(request.form.get('fat_armazenagem') or 0)
+        cliente_atual.fat_transporte = float(request.form.get('fat_transporte') or 0)
+        cliente_atual.fat_manuseio = float(request.form.get('fat_manuseio') or 0)
         cliente_atual.paletes_ocupados = int(request.form.get('paletes_ocupados') or 0)
         cliente_atual.custo_variavel = float(request.form.get('custo_variavel') or 0)
-        custo_variavel = db.Column(db.Float, nullable=False, default=0.0) # A NOVA GAVETA
         
         db.session.commit()
         return redirect(url_for('rentabilidade_clientes', cd_id=cliente_atual.cd_id))

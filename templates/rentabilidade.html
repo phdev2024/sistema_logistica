@@ -2,7 +2,7 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <title>Rentabilidade de Clientes - {{ cd.nome }}</title>
+    <title>Rentabilidade da Base - Logcare Logística</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -13,141 +13,230 @@
     />
   </head>
   <body class="bg-light">
-    <div class="container mt-5">
-      <div class="d-flex justify-content-between mb-3">
-        <a href="/cadastro" class="btn btn-outline-secondary"
-          >← Voltar para Cadastros</a
-        >
-        <h5 class="text-secondary">
-          Custo Base Atual da Posição:
-          <strong>R$ {{ custo_posicao | moeda_br }}</strong>
-        </h5>
+    <div class="container mt-5 mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="fw-bold text-dark mb-1">
+            Rentabilidade da Base: {{ cd.nome }}
+          </h2>
+          <span class="text-muted"
+            >Custo Calculado da Posição:
+            <strong class="text-dark"
+              >R$ {{ custo_posicao | moeda_br }}</strong
+            ></span
+          >
+        </div>
+        <div>
+          <a href="/" class="btn btn-outline-secundaria"
+            >← Voltar ao Dashboard</a
+          >
+        </div>
       </div>
 
-      <!-- Formulário de Lançamento -->
-      <div class="card shadow mb-4">
-        <div class="card-header bg-success text-white">
-          <h3 class="mb-0">Registrar Faturamento do Cliente</h3>
+      <!-- MENSAGENS FLASH -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category }} shadow-sm">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <!-- FORMULÁRIO (CABEÇALHO LIMPO) -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header card-header-clean">
+          <h5>+ Registrar Operação de Cliente</h5>
         </div>
         <div class="card-body">
-          <!-- Início do Formulário de Lançamento de Cliente -->
-<form method="POST">
-  <div class="row align-items-end">
-      <!-- Caixa 1: Nome do Cliente (Ocupa 3 de 12 espaços) -->
-      <div class="col-md-3 mb-3">
-          <label class="form-label fw-bold">Nome do Cliente</label>
-          <input type="text" class="form-control" name="nome_cliente" required>
-      </div>
-      
-      <!-- Caixa 2: Mês (Ocupa 2 de 12 espaços) -->
-      <div class="col-md-2 mb-3">
-          <label class="form-label fw-bold">Mês Referência</label>
-          <input type="text" class="form-control" name="mes_ref" placeholder="2026-08" required>
-      </div>
-      
-      <!-- Caixa 3: Faturamento (Ocupa 2 de 12 espaços) -->
-      <div class="col-md-2 mb-3">
-          <label class="form-label fw-bold">Faturamento (R$)</label>
-          <input type="number" step="0.01" class="form-control" name="faturamento" required>
-      </div>
-      
-      <!-- Caixa 4: Paletes Usados (Ocupa 2 de 12 espaços) -->
-      <div class="col-md-2 mb-3">
-          <label class="form-label fw-bold">Paletes Usados</label>
-          <input type="number" class="form-control" name="paletes_ocupados" required>
-      </div>
-      
-      <!-- Caixa 5: O novo Custo Variável (Ocupa 2 de 12 espaços) -->
-      <div class="col-md-2 mb-3">
-          <label class="form-label fw-bold">Custo Variável (R$)</label>
-          <!-- A trava de segurança value="0.00" já vem preenchida -->
-          <input type="number" step="0.01" class="form-control" name="custo_variavel" value="0.00" required>
-      </div>
-      
-      <!-- Caixa 6: Botão Salvar (Ocupa a linha inteira de baixo) -->
-      <div class="col-12 mt-2">
-          <button type="submit" class="btn btn-empresa w-100 fw-bold">Salvar Cliente e Calcular Margem</button>
-      </div>
-  </div>
-</form>
+          <form method="POST">
+            <!-- Linha 1: Dados Cadastrais e Operacionais -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Nome do Cliente</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  name="nome_cliente"
+                  placeholder="Ex: Unilever"
+                  required
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Mês Referência</label
+                >
+                <input
+                  type="month"
+                  class="form-control"
+                  name="mes_ref"
+                  required
+                />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Posições/m² Ocupados</label
+                >
+                <input
+                  type="number"
+                  step="0.1"
+                  class="form-control"
+                  name="paletes_ocupados"
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Custo Variável Direto (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="custo_variavel"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
 
-      <!-- Tabela de Rentabilidade (A Lista Solicitada) -->
-      <div class="card shadow">
-        <div class="card-header bg-dark text-white">
-          <h4 class="mb-0">Análise de Rentabilidade por Cliente</h4>
+            <!-- Linha 2: Faturamento Segregado -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Armazenagem (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_armazenagem"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Transporte (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_transporte"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Manuseio (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_manuseio"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-empresa px-4">
+                Gravar Operação
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="card-body">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Cliente</th>
-                <th>Mês</th>
-                <th>Faturamento (Receita)</th>
-                <th>Paletes Usados</th>
-                <th>Custo Operacional</th>
-                <th>Lucro Líquido</th>
-                <th>Margem (%)</th>
-                <th>Ações</th>
-                <!-- NOVA COLUNA -->
-              </tr>
-            </thead>
-            <tbody>
-              {% for res in resultados %}
-              <tr>
-                <td><strong>{{ res.nome }}</strong></td>
-                <td>{{ res.mes }}</td>
-                <td class="text-success fw-bold">
-                  R$ {{ res.faturamento | moeda_br }}
-                </td>
-                <td>{{ res.paletes }} un.</td>
-                <td class="text-danger">R$ {{ res.custo | moeda_br }}</td>
-                <td><strong>R$ {{ res.lucro | moeda_br }}</strong></td>
+      </div>
 
-                <!-- Regra Visual para a Porcentagem -->
-                <td>
-                  {% if res.margem >= 20 %}
-                  <span class="badge bg-success fs-6"
-                    >{{ "%.1f"|format(res.margem) }}%</span
+      <!-- TABELA DE RENTABILIDADE (CABEÇALHO LIMPO) -->
+      <div class="card shadow-sm">
+        <div class="card-header card-header-clean">
+          <h5>Contratos Ativos e Rentabilidade</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Mês</th>
+                  <th>Ocupação</th>
+                  <th>Armazenagem</th>
+                  <th>Transporte</th>
+                  <th>Manuseio</th>
+                  <th class="table-primary text-dark">Fat. Total</th>
+                  <th>Custo Total</th>
+                  <th>Resultado (Lucro)</th>
+                  <th>Margem</th>
+                  <th class="text-end" style="padding-right: 1.5rem">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in resultados %}
+                <tr>
+                  <td><strong class="text-dark">{{ item.nome }}</strong></td>
+                  <td>{{ item.mes }}</td>
+                  <td>{{ item.paletes }} un.</td>
+                  <td>R$ {{ item.fat_arm | moeda_br }}</td>
+                  <td>R$ {{ item.fat_trans | moeda_br }}</td>
+                  <td>R$ {{ item.fat_man | moeda_br }}</td>
+                  <td class="table-primary text-dark fw-bold">
+                    R$ {{ item.faturamento | moeda_br }}
+                  </td>
+                  <td class="text-danger fw-semibold">
+                    R$ {{ item.custo | moeda_br }}
+                  </td>
+                  <td
+                    class="fw-bold {% if item.lucro >= 0 %}text-success{% else %}text-danger{% endif %}"
                   >
-                  {% elif res.margem > 0 %}
-                  <span class="badge bg-warning text-dark fs-6"
-                    >{{ "%.1f"|format(res.margem) }}%</span
-                  >
-                  {% else %}
-                  <span class="badge bg-danger fs-6"
-                    >{{ "%.1f"|format(res.margem) }}%</span
-                  >
-                  {% endif %}
-                </td>
-                <!-- Ações: Editar e Excluir lado a lado -->
-                <td>
-                  <div class="d-flex gap-2">
-                    <a
-                      href="{{ url_for('editar_cliente', cliente_id=res.id) }}"
-                      class="btn btn-sm btn-primary fw-bold"
-                      >Editar</a
+                    R$ {{ item.lucro | moeda_br }}
+                  </td>
+                  <td>
+                    {% if item.margem >= 20 %}
+                    <span class="badge bg-success"
+                      >{{ "%.1f"|format(item.margem) }}%</span
                     >
-
-                    <form
-                      action="{{ url_for('excluir_cliente', cliente_id=res.id) }}"
-                      method="POST"
-                      onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');"
+                    {% elif item.margem > 0 %}
+                    <span class="badge bg-warning text-dark"
+                      >{{ "%.1f"|format(item.margem) }}%</span
                     >
-                      <button
-                        type="submit"
-                        class="btn btn-sm btn-danger fw-bold"
+                    {% else %}
+                    <span class="badge bg-danger"
+                      >{{ "%.1f"|format(item.margem) }}%</span
+                    >
+                    {% endif %}
+                  </td>
+                  <td class="text-end" style="padding-right: 1.5rem">
+                    <div class="acoes-tabela">
+                      <a
+                        href="{{ url_for('editar_cliente', cliente_id=item.id) }}"
+                        class="btn btn-outline-secundaria"
+                        >Editar</a
                       >
-                        Excluir
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                      <form
+                        action="{{ url_for('excluir_cliente', cliente_id=item.id) }}"
+                        method="POST"
+                        class="d-inline"
+                        onsubmit="return confirm('Deseja realmente excluir esta operação?');"
+                      >
+                        <button type="submit" class="btn btn-outline-danger">
+                          Excluir
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

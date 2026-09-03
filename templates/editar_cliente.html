@@ -2,7 +2,7 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <title>Editar Cliente</title>
+    <title>Editar Operação de Cliente - Logcare Logística</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -13,58 +13,72 @@
     />
   </head>
   <body class="bg-light">
-    <div class="container mt-5">
-      <div class="card shadow border-primary">
-        <div class="card-header bg-primary text-white">
-          <h3 class="mb-0 fw-bold">Editar Dados do Cliente</h3>
+    <div class="container mt-5 mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="fw-bold text-dark mb-1">Editar Dados do Contrato</h2>
+          <span class="text-muted"
+            >Atualização de faturamento e posições ocupadas</span
+          >
+        </div>
+        <div>
+          <a
+            href="{{ url_for('rentabilidade_clientes', cd_id=cliente.cd_id) }}"
+            class="btn btn-outline-secundaria"
+            >← Voltar para Rentabilidade</a
+          >
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header card-header-clean">
+          <h5>Cliente: {{ cliente.cliente_nome }}</h5>
         </div>
         <div class="card-body">
           <form method="POST">
+            <!-- Linha 1: Dados Básicos e Operação Física -->
             <div class="row">
-              <div class="col-md-3 mb-3">
-                <label class="form-label fw-bold">Nome do Cliente</label>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Nome do Cliente</label
+                >
                 <input
                   type="text"
                   class="form-control"
                   name="nome_cliente"
-                  value="{{ cliente.nome_cliente }}"
+                  value="{{ cliente.cliente_nome }}"
                   required
                 />
               </div>
               <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Mês Referência</label>
+                <label class="form-label fw-semibold text-secondary"
+                  >Mês Referência</label
+                >
                 <input
-                  type="text"
+                  type="month"
                   class="form-control"
                   name="mes_ref"
                   value="{{ cliente.mes_referencia }}"
                   required
                 />
               </div>
-              <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Faturamento (R$)</label>
+              <div class="col-md-3 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Posições/m² Ocupados</label
+                >
                 <input
                   type="number"
-                  step="0.01"
-                  class="form-control"
-                  name="faturamento"
-                  value="{{ cliente.faturamento }}"
-                  required
-                />
-              </div>
-              <div class="col-md-2 mb-3">
-                <label class="form-label fw-bold">Paletes Usados</label>
-                <input
-                  type="number"
+                  step="0.1"
                   class="form-control"
                   name="paletes_ocupados"
                   value="{{ cliente.paletes_ocupados }}"
                   required
                 />
               </div>
-              <!-- Custo Variável agora dentro da mesma 'row' -->
               <div class="col-md-3 mb-3">
-                <label class="form-label fw-bold">Custo Variável (R$)</label>
+                <label class="form-label fw-semibold text-secondary"
+                  >Custo Variável Direto (R$)</label
+                >
                 <input
                   type="number"
                   step="0.01"
@@ -76,14 +90,57 @@
               </div>
             </div>
 
-            <!-- Botões isolados em sua própria linha -->
-            <div class="d-flex justify-content-end gap-3 mt-3">
+            <!-- Linha 2: Faturamento Segregado -->
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Armazenagem (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_armazenagem"
+                  value="{{ cliente.fat_armazenagem }}"
+                  required
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Transporte (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_transporte"
+                  value="{{ cliente.fat_transporte }}"
+                  required
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Fat. Manuseio (R$)</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  name="fat_manuseio"
+                  value="{{ cliente.fat_manuseio }}"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Botões de Ação Alinhados -->
+            <div class="d-flex justify-content-end gap-2 mt-3">
               <a
                 href="{{ url_for('rentabilidade_clientes', cd_id=cliente.cd_id) }}"
-                class="btn btn-outline-secundaria fw-bold"
+                class="btn btn-outline-secundaria px-4"
                 >Cancelar</a
               >
-              <button type="submit" class="btn btn-primary fw-bold">
+              <button type="submit" class="btn btn-empresa px-4">
                 Salvar Alterações
               </button>
             </div>
@@ -91,5 +148,7 @@
         </div>
       </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

@@ -1,167 +1,118 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+/* ==========================================================================
+   DESIGN SYSTEM EXECUTIVO - LOGCARE LOGÍSTICA
+   ========================================================================== */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
-/* =========================================================
-   ARQUIVO: static/css/style.css
-   Identidade Visual - Logcare Logística / Calculadora Checkup
-   ========================================================= */
-
-/* 1. VARIÁVEIS GLOBAIS (O "Cérebro" das Cores) */
-/* Ordem: "Computador, guarde essas cores na memória. Se o diretor quiser mudar a cor da empresa no futuro, mudamos apenas nestas duas linhas, e o site inteiro se adapta sozinho." */
 :root {
-  --cor-primaria: #00bba9; /* Verde vibrante da marca */
-  --cor-secundaria: #306359; /* Verde escuro (usado para contraste e cliques) */
+  --cor-primaria: #00bfa5;
+  --cor-primaria-hover: #009688;
+  --cor-grafite-dark: #1e293b;
+  --cor-grafite-muted: #64748b;
+  --cor-cinza-bg: #f8fafc;
+  --cor-borda: #e2e8f0;
 }
 
-/* 2. FONTE PADRÃO */
-/* Ordem: "Computador, ignore a fonte padrão do sistema e use a 'Poppins' em todos os textos." */
+* {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 body {
-  font-family: "Poppins", sans-serif !important;
+  background-color: var(--cor-cinza-bg);
+  color: var(--cor-grafite-dark);
 }
 
-/* =========================================================
-   3. CLASSES UTILITÁRIAS (Substituindo o Azul do Bootstrap)
-   ========================================================= */
-
-/* Ordem: "Computador, quando eu usar 'bg-empresa', pinte o fundo de verde vibrante e deixe o texto branco." */
+/* 1. Classes Globais de Destaque */
 .bg-empresa {
   background-color: var(--cor-primaria) !important;
-  color: white !important;
+  color: #ffffff !important;
 }
 
-/* Ordem: "Computador, quando eu usar 'text-empresa', pinte apenas as letras com o verde vibrante." */
 .text-empresa {
   color: var(--cor-primaria) !important;
 }
 
-/* =========================================================
-   4. BOTÕES PERSONALIZADOS (Limpeza da Redundância)
-   ========================================================= */
+/* 2. Cabeçalho Executivo Limpo (Substitui as faixas pretas) */
+.card-header-clean {
+  background-color: #ffffff !important;
+  border-top: 4px solid var(--cor-primaria);
+  border-bottom: 1px solid var(--cor-borda);
+  padding: 1rem 1.25rem;
+}
 
-/* Botão Principal (Fundo transparente com borda colorida) */
+.card-header-clean h5 {
+  color: var(--cor-grafite-dark);
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+/* 3. Cartões Padronizados */
+.card {
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+/* 4. Botões Padronizados */
 .btn-empresa {
-  background-color: transparent !important;
-  color: var(--cor-primaria) !important;
-  border: 1px solid var(--cor-primaria) !important;
-  transition: all 0.3s ease; /* Animação suave para não piscar seco */
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+  border: 1px solid var(--cor-primaria);
+  font-weight: 600;
 }
 
-/* Ordem: "Computador, quando o mouse passar por cima (hover), inverta as cores. Preencha com verde escuro e deixe a letra branca." */
 .btn-empresa:hover {
-  background-color: var(--cor-secundaria) !important;
-  color: white !important;
-  border-color: var(--cor-secundaria) !important;
+  background-color: var(--cor-primaria-hover);
+  color: #ffffff;
 }
 
-/* Botão Secundário */
+.btn-outline-empresa {
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-primaria);
+  background-color: transparent;
+  font-weight: 600;
+}
+
+.btn-outline-empresa:hover {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+}
+
 .btn-outline-secundaria {
-  background-color: transparent !important;
-  color: var(--cor-secundaria) !important;
-  border: 1px solid var(--cor-secundaria) !important;
-  transition: all 0.3s ease;
+  color: var(--cor-grafite-muted);
+  border: 1px solid var(--cor-borda);
+  background-color: #ffffff;
+  font-weight: 500;
 }
 
 .btn-outline-secundaria:hover {
-  background-color: var(--cor-secundaria) !important;
-  color: white !important;
-  box-shadow: none !important; /* Ordem: "Computador, remova o brilho azul padrão do Bootstrap." */
+  background-color: #f1f5f9;
+  color: var(--cor-grafite-dark);
 }
 
-/* Botão de Backup/Ação Extra */
-.btn-backup {
-  background-color: transparent;
-  color: #28a745;
-  border: 1px solid #28a745;
-  padding: 8px 16px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
+/* 5. Tabelas Executivas */
+.table {
+  font-size: 0.88rem;
+}
+
+.table thead th {
+  background-color: #f8fafc;
+  color: var(--cor-grafite-muted);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+/* 6. Alinhamento de Ações na Tabela */
+.acoes-tabela {
   display: inline-flex;
+  gap: 0.35rem;
   align-items: center;
-  transition: all 0.3s ease;
 }
 
-.btn-backup:hover {
-  background-color: #28a745;
-  color: white;
-  cursor: pointer;
-}
-
-/* =========================================================
-   5. STATUS KANBAN (Gestão Visual Rápida)
-   ========================================================= */
-
-.badge-aberto {
-  background-color: transparent !important;
-  color: #fd7e14 !important; /* Laranja */
-  border: 1px solid #fd7e14 !important;
-}
-.badge-conferencia {
-  background-color: transparent !important;
-  color: #ffc107 !important; /* Amarelo */
-  border: 1px solid #ffc107 !important;
-}
-.badge-aprovado {
-  background-color: transparent !important;
-  color: #198754 !important; /* Verde */
-  border: 1px solid #198754 !important;
-}
-.badge-pago {
-  background-color: transparent !important;
-  color: #0d6efd !important; /* Azul */
-  border: 1px solid #0d6efd !important;
-}
-.badge-rejeitado {
-  background-color: transparent !important;
-  color: #8b0000 !important; /* Vermelho Escuro */
-  border: 1px solid #8b0000 !important;
-}
-
-/* =========================================================
-   6. REGRAS DE IMPRESSÃO (O que acontece ao apertar Ctrl+P)
-   ========================================================= */
-/* Unificamos os dois blocos '@media print' antigos em um só motor de impressão */
-
-@media print {
-  /* Ordem: "Computador, deixe 1 centímetro de espaço nas bordas da folha A4." */
-  @page {
-    margin: 1cm;
-  }
-
-  /* Ordem: "Computador, esconda os botões e formulários. Papel não é clicável." */
-  nav,
-  .navbar,
-  .btn,
-  button,
-  form,
-  .nao-imprimir {
-    display: none !important;
-  }
-
-  /* Ordem: "Computador, aperte a tabela para ela não vazar do papel." */
-  table {
-    width: 100% !important;
-    max-width: 100% !important;
-    font-size: 10px !important;
-    table-layout: fixed !important;
-  }
-
-  /* Ordem: "Computador, se o texto for gigante, quebre a linha em vez de estragar a tabela." */
-  th,
-  td {
-    padding: 4px !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-    white-space: normal !important;
-  }
-
-  /* Ordem: "Computador, remova todos os fundos e sombras para não gastar tinta preta da impressora." */
-  body,
-  .card,
-  .container {
-    background-color: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
+.acoes-tabela .btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
