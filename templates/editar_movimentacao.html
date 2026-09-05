@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Movimentação - Logcare Logística</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container mt-5 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Editar Apontamento Físico</h2>
+                <span class="text-muted">Correção de fluxo de doca, paletes e volumes</span>
+            </div>
+            <div>
+                <a href="{{ url_for('movimentacao_operacional', cd_id=mov.cd_id) }}" class="btn btn-outline-secundaria">← Voltar</a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header card-header-clean">
+                <h5>Apontamento #{{ mov.id }} - {{ mov.cliente.cliente_nome }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Data da Operação</label>
+                            <input type="date" class="form-control" name="data_operacao" value="{{ mov.data_operacao }}" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Cliente</label>
+                            <select name="cliente_id" class="form-select" required>
+                                {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}" {% if cliente.id == mov.cliente_id %}selected{% endif %}>
+                                        {{ cliente.cliente_nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Fluxo</label>
+                            <select name="tipo_fluxo" class="form-select" required>
+                                <option value="Inbound" {% if mov.tipo_fluxo == 'Inbound' %}selected{% endif %}>Inbound (Entrada)</option>
+                                <option value="Outbound" {% if mov.tipo_fluxo == 'Outbound' %}selected{% endif %}>Outbound (Saída)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Paletes</label>
+                            <input type="number" step="0.1" class="form-control" name="paletes" value="{{ mov.paletes }}" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Caixas (Volumes)</label>
+                            <input type="number" class="form-control" name="caixas" value="{{ mov.caixas }}">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ url_for('movimentacao_operacional', cd_id=mov.cd_id) }}" class="btn btn-outline-secundaria px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-empresa px-4">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

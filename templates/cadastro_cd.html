@@ -135,6 +135,13 @@
                         >Editar</a
                       >
 
+                      <a
+                        href="{{ url_for('movimentacao_operacional', cd_id=cd.id) }}"
+                        class="btn btn-outline-empresa"
+                        title="Movimentação Física"
+                        >Movimentação</a
+                      >
+
                       <form
                         action="{{ url_for('excluir_cd', cd_id=cd.id) }}"
                         method="POST"

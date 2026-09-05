@@ -52,6 +52,19 @@ class OperacaoCliente(db.Model):
     @property
     def faturamento(self):
         return self.fat_armazenagem + self.fat_transporte + self.fat_manuseio
+    
+# --- MOLDE 4: MOVIMENTAÇÃO FÍSICA (Inbound e Outbound) ---
+class MovimentacaoFisica(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cd_id = db.Column(db.Integer, db.ForeignKey('centro_distribuicao.id'), nullable=False)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('operacao_cliente.id'), nullable=False)
+    data_operacao = db.Column(db.String(10), nullable=False)  # Ex: "2026-09-05"
+    tipo_fluxo = db.Column(db.String(10), nullable=False)     # "Inbound" (Entrada) ou "Outbound" (Saída)
+    paletes = db.Column(db.Float, default=0.0)
+    caixas = db.Column(db.Integer, default=0)
+
+    # Cria a amarração direta para sabermos o nome do cliente sem buscas manuais
+    cliente = db.relationship('OperacaoCliente', backref='movimentacoes')
 
 # 3. Rota da tela de cadastro
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -412,6 +425,78 @@ def editar_cliente(cliente_id):
         return redirect(url_for('rentabilidade_clientes', cd_id=cliente_atual.cd_id))
         
     return render_template('editar_cliente.html', cliente=cliente_atual)
+
+@app.route('/movimentacao/<int:cd_id>', methods=['GET', 'POST'])
+def movimentacao_operacional(cd_id):
+    cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
+    clientes_base = OperacaoCliente.query.filter_by(cd_id=cd_id).all()
+
+    # 1. Gravação de uma nova movimentação física
+    if request.method == 'POST':
+        nova_mov = MovimentacaoFisica(
+            cd_id=cd_atual.id,
+            cliente_id=int(request.form.get('cliente_id')),
+            data_operacao=request.form.get('data_operacao'),
+            tipo_fluxo=request.form.get('tipo_fluxo'),
+            paletes=float(request.form.get('paletes') or 0),
+            caixas=int(request.form.get('caixas') or 0)
+        )
+        db.session.add(nova_mov)
+        db.session.commit()
+        flash("Movimentação física registrada com sucesso!", "success")
+        return redirect(url_for('movimentacao_operacional', cd_id=cd_id))
+
+    # 2. Leitura e cálculo dos totais da base
+    movimentacoes = MovimentacaoFisica.query.filter_by(cd_id=cd_id).order_by(MovimentacaoFisica.id.desc()).all()
+    
+    total_inbound_paletes = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Inbound')
+    total_outbound_paletes = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Outbound')
+    total_caixas_movimentadas = sum(m.caixas for m in movimentacoes)
+
+    return render_template(
+        'movimentacao.html',
+        cd=cd_atual,
+        clientes=clientes_base,
+        movimentacoes=movimentacoes,
+        inbound_paletes=total_inbound_paletes,
+        outbound_paletes=total_outbound_paletes,
+        total_caixas=total_caixas_movimentadas
+    )
+
+# --- ROTA: EDITAR MOVIMENTAÇÃO FÍSICA ---
+@app.route('/editar_movimentacao/<int:mov_id>', methods=['GET', 'POST'])
+def editar_movimentacao(mov_id):
+    mov = MovimentacaoFisica.query.get_or_404(mov_id)
+    clientes_base = OperacaoCliente.query.filter_by(cd_id=mov.cd_id).all()
+
+    if request.method == 'POST':
+        # 1. Pergunta ao formulário: quais são os novos valores corrigidos?
+        mov.data_operacao = request.form.get('data_operacao')
+        mov.cliente_id = int(request.form.get('cliente_id'))
+        mov.tipo_fluxo = request.form.get('tipo_fluxo')
+        mov.paletes = float(request.form.get('paletes') or 0)
+        mov.caixas = int(request.form.get('caixas') or 0)
+
+        # 2. Ordem ao banco: comite as alterações nesta linha específica
+        db.session.commit()
+        flash("Movimentação física atualizada com sucesso!", "success")
+        return redirect(url_for('movimentacao_operacional', cd_id=mov.cd_id))
+
+    return render_template('editar_movimentacao.html', mov=mov, clientes=clientes_base)
+
+
+# --- ROTA: EXCLUIR MOVIMENTAÇÃO FÍSICA ---
+@app.route('/excluir_movimentacao/<int:mov_id>', methods=['POST'])
+def excluir_movimentacao(mov_id):
+    mov = MovimentacaoFisica.query.get_or_404(mov_id)
+    cd_id_retorno = mov.cd_id
+
+    # Ordem ao banco: delete o registro e confirme a operação
+    db.session.delete(mov)
+    db.session.commit()
+    flash("Apontamento excluído com sucesso!", "success")
+    return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
+
 
 if __name__ == '__main__':
     # 4. Ordem para criar o arquivo do banco antes de ligar o servidor
