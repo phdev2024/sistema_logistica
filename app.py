@@ -431,7 +431,7 @@ def movimentacao_operacional(cd_id):
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     clientes_base = OperacaoCliente.query.filter_by(cd_id=cd_id).all()
 
-    # 1. Gravação de uma nova movimentação física
+    # 1. Gravação de movimentação física (POST)
     if request.method == 'POST':
         nova_mov = MovimentacaoFisica(
             cd_id=cd_atual.id,
@@ -446,21 +446,33 @@ def movimentacao_operacional(cd_id):
         flash("Movimentação física registrada com sucesso!", "success")
         return redirect(url_for('movimentacao_operacional', cd_id=cd_id))
 
-    # 2. Leitura e cálculo dos totais da base
+    # 2. Leitura e agregação dos volumes
     movimentacoes = MovimentacaoFisica.query.filter_by(cd_id=cd_id).order_by(MovimentacaoFisica.id.desc()).all()
     
-    total_inbound_paletes = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Inbound')
-    total_outbound_paletes = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Outbound')
+    total_inbound = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Inbound')
+    total_outbound = sum(m.paletes for m in movimentacoes if m.tipo_fluxo == 'Outbound')
+    total_paletes_girados = total_inbound + total_outbound
     total_caixas_movimentadas = sum(m.caixas for m in movimentacoes)
+
+    # 3. Inteligência Financeira de Giro (Handling)
+    receita_total_manuseio = sum(c.fat_manuseio for c in clientes_base)
+    
+    # Cálculo das taxas unitárias de giro evitam divisão por zero
+    rec_por_palete_giro = (receita_total_manuseio / total_paletes_girados) if total_paletes_girados > 0 else 0.0
+    rec_por_caixa_giro = (receita_total_manuseio / total_caixas_movimentadas) if total_caixas_movimentadas > 0 else 0.0
 
     return render_template(
         'movimentacao.html',
         cd=cd_atual,
         clientes=clientes_base,
         movimentacoes=movimentacoes,
-        inbound_paletes=total_inbound_paletes,
-        outbound_paletes=total_outbound_paletes,
-        total_caixas=total_caixas_movimentadas
+        inbound_paletes=total_inbound,
+        outbound_paletes=total_outbound,
+        total_paletes_girados=total_paletes_girados,
+        total_caixas=total_caixas_movimentadas,
+        receita_manuseio=receita_total_manuseio,
+        rec_por_palete=rec_por_palete_giro,
+        rec_por_caixa=rec_por_caixa_giro
     )
 
 # --- ROTA: EDITAR MOVIMENTAÇÃO FÍSICA ---

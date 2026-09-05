@@ -36,49 +36,71 @@
       <div class="alert alert-{{ category }} shadow-sm">{{ message }}</div>
       {% endfor %} {% endif %} {% endwith %}
 
-      <!-- CARTÕES DE INDICADORES DE VOLUME -->
-      <div class="row text-center mb-4">
-        <div class="col-md-4">
+      <!-- CARTÕES DE INDICADORES: GIRO E HANDLING -->
+      <div class="row text-center mb-4 g-3">
+        <div class="col-md-3">
           <div class="card shadow-sm h-100">
             <div class="card-body p-3">
               <span
                 class="text-uppercase text-muted fw-semibold"
                 style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Entradas (Inbound)</span
+                >Fluxo Físico (Docas)</span
               >
-              <h4 class="mt-1 mb-0 fw-bold text-dark">
-                {{ inbound_paletes }}
-                <small class="text-muted fs-6">Paletes</small>
-              </h4>
+              <h5 class="mt-2 mb-0 fw-bold text-dark">
+                <span class="text-secondary">⬇ {{ inbound_paletes }}</span> |
+                <span class="text-dark">⬆ {{ outbound_paletes }}</span>
+              </h5>
+              <small class="text-muted">Inbound vs Outbound (pl)</small>
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <div class="card shadow-sm h-100">
             <div class="card-body p-3">
               <span
                 class="text-uppercase text-muted fw-semibold"
                 style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Saídas (Outbound)</span
+                >Giro Total Movimentado</span
               >
               <h4 class="mt-1 mb-0 fw-bold text-dark">
-                {{ outbound_paletes }}
+                {{ total_paletes_girados }}
                 <small class="text-muted fs-6">Paletes</small>
               </h4>
+              <small class="text-muted"
+                >{{ total_caixas }} caixas operadas</small
+              >
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-body p-3">
+              <span
+                class="text-uppercase text-muted fw-semibold"
+                style="font-size: 0.72rem; letter-spacing: 0.5px"
+                >Fat. Manuseio (Handling)</span
+              >
+              <h4 class="mt-1 mb-0 fw-bold text-dark">
+                R$ {{ receita_manuseio | moeda_br }}
+              </h4>
+              <small class="text-muted">Receita contratual direta</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
           <div class="card shadow-sm h-100 bg-empresa text-white">
             <div class="card-body p-3">
               <span
                 class="text-uppercase text-white-50 fw-semibold"
                 style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Total de Caixas (Volumes)</span
+                >Remuneração por Giro</span
               >
               <h4 class="mt-1 mb-0 fw-bold text-white">
-                {{ total_caixas }} <small class="text-white-50 fs-6">cx</small>
+                R$ {{ rec_por_palete | moeda_br }}
               </h4>
+              <small class="text-white-50"
+                >R$ {{ "%.2f"|format(rec_por_caixa) }} por caixa operada</small
+              >
             </div>
           </div>
         </div>

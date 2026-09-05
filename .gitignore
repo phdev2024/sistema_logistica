@@ -1,4 +1,16 @@
-/venv
+# Arquivos de ambiente virtual
+venv/
+env/
+.venv/
+
+# Caches do Python
 __pycache__/
-instance/
+*.pyc
+
+# Banco de dados local SQLite (evita sobrescrever dados reais em produção)
+instance/*.db
 *.db
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
