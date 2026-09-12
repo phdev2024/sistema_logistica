@@ -26,6 +26,10 @@ if database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
+# A Pergunta: "O banco de dados conectado já possui todas as tabelas necessárias?"
+# A Ordem: "Se não possuir, crie todas agora mesmo antes de receber acessos!"
+with app.app_context():
+    db.create_all()
 
 # 2. Desenhando a Tabela do Banco de Dados (Molde)
 class CentroDistribuicao(db.Model):
