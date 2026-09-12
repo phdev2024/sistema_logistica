@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_logistica_2026'
@@ -14,7 +15,16 @@ def formato_moeda_br(valor):
     return valor_formatado
 
 # 1. Configurando o endereço do Banco de Dados
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///banco_logistica.db'
+
+# Pergunta: "Existe um banco configurado na nuvem?"
+# Se sim, usa ele. Se não (no seu VS Code local), continua no SQLite.
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///banco_logistica.db')
+
+# Ajuste técnico: o SQLAlchemy exige o prefixo 'postgresql://'
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
 
 # 2. Desenhando a Tabela do Banco de Dados (Molde)
