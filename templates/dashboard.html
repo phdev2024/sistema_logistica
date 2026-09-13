@@ -14,11 +14,24 @@
   </head>
   <body class="bg-light">
     <div class="container mt-5">
-      <div class="d-flex justify-content-between mb-4">
-        <h2 class="fw-bold text-dark">Check Up Executivo</h2>
-        <a href="/cadastro" class="btn btn-outline-secundaria fw-bold"
-          >+ Gerenciar Bases Operacionais</a
-        >
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 class="fw-bold text-dark mb-0">Check Up Executivo</h2>
+          <small class="text-muted"
+            >Usuário: <strong>{{ current_user.nome }}</strong></small
+          >
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/cadastro" class="btn btn-outline-secundaria fw-bold">
+            + Gerenciar Bases Operacionais
+          </a>
+          <a
+            href="{{ url_for('auth.logout') }}"
+            class="btn btn-outline-danger btn-sm d-flex align-items-center"
+          >
+            Sair
+          </a>
+        </div>
       </div>
 
       <!-- 1. BLOCO FINANCEIRO (Visão Global) -->

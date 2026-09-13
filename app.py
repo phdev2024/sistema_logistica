@@ -95,6 +95,7 @@ with app.app_context():
 
 # 3. Rota da tela de cadastro
 @app.route('/cadastro', methods=['GET', 'POST'])
+@login_required
 def tela_cadastro():
     # 1. Separando quem está acessando de quem está enviando dados
     if request.method == 'POST':
@@ -123,6 +124,7 @@ def tela_cadastro():
 
 # Rota para editar os dados físicos de um CD existente
 @app.route('/editar_cd/<int:cd_id>', methods=['GET', 'POST'])
+@login_required
 def editar_cd(cd_id):
     # Busca o CD exato no banco de dados
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
@@ -141,6 +143,7 @@ def editar_cd(cd_id):
     return render_template('editar_cd.html', cd=cd_atual)
 
 @app.route('/excluir_cd/<int:cd_id>', methods=['POST'])
+@login_required
 def excluir_cd(cd_id):
     cd_para_apagar = CentroDistribuicao.query.get_or_404(cd_id)
 
@@ -159,6 +162,7 @@ def excluir_cd(cd_id):
     return redirect(url_for('tela_cadastro'))
 
 @app.route('/custos/<int:cd_id>', methods=['GET', 'POST'])
+@login_required
 def gerenciar_custos(cd_id):
     # Buscando o CD específico no banco
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
@@ -212,6 +216,7 @@ def gerenciar_custos(cd_id):
 
 # Rota para deletar um custo lançado errado
 @app.route('/excluir_custo/<int:custo_id>', methods=['POST'])
+@login_required
 def excluir_custo(custo_id):
     # 1. Localiza a despesa exata no banco de dados
     custo_para_apagar = CustoCD.query.get_or_404(custo_id)
@@ -228,6 +233,7 @@ def excluir_custo(custo_id):
 
 # Rota para editar uma despesa já existente
 @app.route('/editar_custo/<int:custo_id>', methods=['GET', 'POST'])
+@login_required
 def editar_custo(custo_id):
     # 1. Buscando a despesa exata no banco de dados
     custo_atual = CustoCD.query.get_or_404(custo_id)
@@ -249,6 +255,7 @@ def editar_custo(custo_id):
     return render_template('editar_custo.html', custo=custo_atual)
 
 @app.route('/rentabilidade/<int:cd_id>', methods=['GET', 'POST'])
+@login_required
 def rentabilidade_clientes(cd_id):
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     
@@ -426,6 +433,7 @@ def painel_gerencial():
 
 # Rota para deletar um cliente lançado errado
 @app.route('/excluir_cliente/<int:cliente_id>', methods=['POST'])
+@login_required
 def excluir_cliente(cliente_id):
     cliente_para_apagar = OperacaoCliente.query.get_or_404(cliente_id)
     cd_de_origem = cliente_para_apagar.cd_id
@@ -437,6 +445,7 @@ def excluir_cliente(cliente_id):
 
 # Rota para editar os dados de faturamento e ocupação
 @app.route('/editar_cliente/<int:cliente_id>', methods=['GET', 'POST'])
+@login_required
 def editar_cliente(cliente_id):
     cliente_atual = OperacaoCliente.query.get_or_404(cliente_id)
     
@@ -455,6 +464,7 @@ def editar_cliente(cliente_id):
     return render_template('editar_cliente.html', cliente=cliente_atual)
 
 @app.route('/movimentacao/<int:cd_id>', methods=['GET', 'POST'])
+@login_required
 def movimentacao_operacional(cd_id):
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     clientes_base = OperacaoCliente.query.filter_by(cd_id=cd_id).all()
@@ -505,6 +515,7 @@ def movimentacao_operacional(cd_id):
 
 # --- ROTA: EDITAR MOVIMENTAÇÃO FÍSICA ---
 @app.route('/editar_movimentacao/<int:mov_id>', methods=['GET', 'POST'])
+@login_required
 def editar_movimentacao(mov_id):
     mov = MovimentacaoFisica.query.get_or_404(mov_id)
     clientes_base = OperacaoCliente.query.filter_by(cd_id=mov.cd_id).all()
@@ -527,6 +538,7 @@ def editar_movimentacao(mov_id):
 
 # --- ROTA: EXCLUIR MOVIMENTAÇÃO FÍSICA ---
 @app.route('/excluir_movimentacao/<int:mov_id>', methods=['POST'])
+@login_required
 def excluir_movimentacao(mov_id):
     mov = MovimentacaoFisica.query.get_or_404(mov_id)
     cd_id_retorno = mov.cd_id
