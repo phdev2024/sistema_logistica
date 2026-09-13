@@ -26,10 +26,7 @@ if database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
-# A Pergunta: "O banco de dados conectado já possui todas as tabelas necessárias?"
-# A Ordem: "Se não possuir, crie todas agora mesmo antes de receber acessos!"
-with app.app_context():
-    db.create_all()
+
 
 # 2. Desenhando a Tabela do Banco de Dados (Molde)
 class CentroDistribuicao(db.Model):
@@ -79,6 +76,11 @@ class MovimentacaoFisica(db.Model):
 
     # Cria a amarração direta para sabermos o nome do cliente sem buscas manuais
     cliente = db.relationship('OperacaoCliente', backref='movimentacoes')
+
+# A Pergunta: "O banco de dados conectado já possui todas as tabelas necessárias?"
+# A Ordem: "Se não possuir, crie todas agora mesmo antes de receber acessos!"
+with app.app_context():
+    db.create_all()
 
 # 3. Rota da tela de cadastro
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -427,7 +429,7 @@ def editar_cliente(cliente_id):
     cliente_atual = OperacaoCliente.query.get_or_404(cliente_id)
     
     if request.method == 'POST':
-        cliente_atual.nome_cliente = request.form.get('nome_cliente')
+        cliente_atual.cliente_nome = request.form.get('nome_cliente')
         cliente_atual.mes_referencia = request.form.get('mes_ref')
         cliente_atual.fat_armazenagem = float(request.form.get('fat_armazenagem') or 0)
         cliente_atual.fat_transporte = float(request.form.get('fat_transporte') or 0)
