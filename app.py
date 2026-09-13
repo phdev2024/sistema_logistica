@@ -321,28 +321,44 @@ def painel_gerencial():
     todos_cds = CentroDistribuicao.query.all()
     todas_operacoes = OperacaoCliente.query.all()
     
-    # 1. Calculando quanto espaço já vendemos
+    # 1. PREPARAÇÃO: Dicionários para guardar o Faturamento e Espaço por CD
     espaco_vendido_por_cd = {}
+    faturamento_por_cd = {}
+    
+    faturamento_global = 0
+    custo_operacional_global = 0
+    total_variavel_global = 0
+    clientes_rentaveis = 0
+    clientes_atencao = 0
+    clientes_deficitarios = 0
+
+    # 2. COLETA DE DADOS: O que já aconteceu de verdade?
     for op in todas_operacoes:
         espaco_vendido_por_cd[op.cd_id] = espaco_vendido_por_cd.get(op.cd_id, 0) + op.paletes_ocupados
+        faturamento_por_cd[op.cd_id] = faturamento_por_cd.get(op.cd_id, 0) + op.faturamento
+        
+        faturamento_global += op.faturamento
+        total_variavel_global += op.custo_variavel
 
-    # Novas Gavetas Separadas por Grandeza
+    # Variáveis de controle globais
     capacidade_paletes_rede = 0
     custo_rede_paletes = 0
-    
     capacidade_m2_rede = 0
     custo_rede_m2 = 0
     
+    # Gavetas da Inteligência Comercial (Ociosidade)
     custo_ociosidade_global = 0
+    receita_potencial_global = 0
+    posicoes_vazias_rede = 0
+    
     resumo_bases = [] 
     memoria_custo_cd = {}
 
-    # 2. O Loop de Separação Inteligente (Paletes vs m²)
+    # 3. INTELIGÊNCIA COMERCIAL: Loop de cálculo por Base Operacional
     for cd in todos_cds:
         custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
         soma_fixo = sum(conta.valor for conta in custos_fixos_cd)
         
-        # A BIFURCAÇÃO LÓGICA
         if cd.capacidade_paletes > 0:
             divisor = cd.capacidade_paletes
             unidade = "Paletes"
@@ -354,6 +370,7 @@ def painel_gerencial():
             capacidade_m2_rede += divisor
             custo_rede_m2 += soma_fixo
             
+        # A Pergunta: "Qual o custo de UMA posição?"
         custo_unitario = soma_fixo / divisor if divisor > 0 else 0
         memoria_custo_cd[cd.id] = custo_unitario
         
@@ -361,9 +378,25 @@ def painel_gerencial():
         espaco_vazio = divisor - espaco_vendido
         if espaco_vazio < 0: 
             espaco_vazio = 0
+            
+        # --- INÍCIO DA RESPOSTA AO SÓCIO ---
         
+        # A Pergunta: "Qual o Custo da Capacidade Ociosa?"
         dinheiro_queimado = espaco_vazio * custo_unitario
         custo_ociosidade_global += dinheiro_queimado
+        
+        # A Pergunta: "Por quanto estamos vendendo cada posição na realidade?" (Ticket Médio)
+        faturamento_deste_cd = faturamento_por_cd.get(cd.id, 0)
+        ticket_medio = faturamento_deste_cd / espaco_vendido if espaco_vendido > 0 else 0
+        
+        # A Pergunta: "Se vendermos todo o espaço vazio por esse preço, quanto entra a mais?"
+        receita_potencial = espaco_vazio * ticket_medio
+        receita_potencial_global += receita_potencial
+        
+        if unidade == "Paletes":
+            posicoes_vazias_rede += espaco_vazio
+        
+        # --- FIM DA RESPOSTA ---
         
         resumo_bases.append({
             'nome': cd.nome,
@@ -374,48 +407,34 @@ def painel_gerencial():
             'espaco_vazio': espaco_vazio
         })
         
-    # 3. As Médias Independentes
+    # 4. As Médias Independentes da Rede
     media_palete = custo_rede_paletes / capacidade_paletes_rede if capacidade_paletes_rede > 0 else 0
     media_m2 = custo_rede_m2 / capacidade_m2_rede if capacidade_m2_rede > 0 else 0
 
-    # 4. Investigação Global dos Clientes
-    faturamento_global = 0
-    custo_operacional_global = 0
-    total_variavel_global = 0 # NOVA GAVETA
-    clientes_rentaveis = 0
-    clientes_atencao = 0
-    clientes_deficitarios = 0
-
+    # 5. Fechamento da Margem Global e Classificação de Clientes
     for op in todas_operacoes:
-        faturamento_global += op.faturamento
         custo_base_cliente = memoria_custo_cd.get(op.cd_id, 0)
         custo_total_cliente = (op.paletes_ocupados * custo_base_cliente) + op.custo_variavel
-        
         custo_operacional_global += custo_total_cliente
-        total_variavel_global += op.custo_variavel # ALIMENTANDO A GAVETA
         
         lucro = op.faturamento - custo_total_cliente
         margem = (lucro / op.faturamento * 100) if op.faturamento > 0 else 0
         
-        if margem >= 20: 
-            clientes_rentaveis += 1
-        elif margem > 0: 
-            clientes_atencao += 1
-        else: 
-            clientes_deficitarios += 1
+        if margem >= 20: clientes_rentaveis += 1
+        elif margem > 0: clientes_atencao += 1
+        else: clientes_deficitarios += 1
             
     lucro_global = faturamento_global - custo_operacional_global
     margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
 
-# 5. O Cálculo do Ponto de Equilíbrio (Break-even)
-    
-    # A Ordem: "Computador, some os custos de Paletes e m² para descobrirmos o Custo Fixo Total real da rede"
+    # 6. Break-even e Margem Potencial (Receita que viria - Custo que já pagamos)
     total_custo_rede = custo_rede_paletes + custo_rede_m2
-    
     margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
-    
-    # Agora a variável 'total_custo_rede' existe e a matemática funciona perfeitamente
     ponto_equilibrio = total_custo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
+    
+    # Se ocuparmos o espaço, o custo fixo não muda. A receita potencial vira lucro quase puro.
+    margem_potencial = receita_potencial_global - custo_ociosidade_global
+
     return render_template(
         'dashboard.html',
         media_palete=media_palete,
@@ -428,7 +447,10 @@ def painel_gerencial():
         atencao=clientes_atencao,
         deficitarios=clientes_deficitarios,
         custo_ociosidade=custo_ociosidade_global,
-        ponto_equilibrio=ponto_equilibrio # ENVIANDO PARA A TELA
+        ponto_equilibrio=ponto_equilibrio,
+        receita_potencial=receita_potencial_global,
+        margem_potencial=margem_potencial,
+        posicoes_vazias=posicoes_vazias_rede
     )
 
 # Rota para deletar um cliente lançado errado

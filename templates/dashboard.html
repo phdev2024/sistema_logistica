@@ -122,26 +122,73 @@
         </div>
       </div>
 
-      <!-- 3. ALERTA DE OCIOSIDADE -->
-      <div
-        class="alert alert-danger shadow mb-4 d-flex align-items-center justify-content-between border-danger"
-        role="alert"
-      >
-        <div>
-          <h5 class="fw-bold mb-1">🚨 Alerta de Ociosidade na Rede</h5>
-          <span class="mb-0"
-            >Capacidade física não comercializada gerando impacto no resultado
-            mensal.</span
-          >
+      <!-- BLOCO DE INTELIGÊNCIA COMERCIAL (Solicitação do Sócio) -->
+      <h6 class="text-secondary fw-bold mt-4 mb-3">
+        Inteligência Comercial (Ociosidade da Rede)
+      </h6>
+      <div class="row text-center mb-4">
+        <!-- 1. Capacidade Ociosa Física (Limpo e Neutro) -->
+        <div class="col-md-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-body p-3 bg-white rounded">
+              <span
+                class="text-uppercase text-muted"
+                style="font-size: 0.7rem; letter-spacing: 1px"
+                >Capacidade Ociosa</span
+              >
+              <h5 class="mt-2 mb-0 fw-bold text-dark">
+                {{ posicoes_vazias | int }} posições
+              </h5>
+            </div>
+          </div>
         </div>
-        <div class="text-end">
-          <h6
-            class="text-uppercase mb-0 text-danger"
-            style="font-size: 0.8rem; font-weight: 700"
-          >
-            Potencial de Perda (Dinheiro Queimado)
-          </h6>
-          <h3 class="mb-0 fw-bold">R$ {{ custo_ociosidade | moeda_br }}</h3>
+
+        <!-- 2. Custo da Ociosidade (Texto em Alerta) -->
+        <div class="col-md-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-body p-3 bg-white rounded">
+              <span
+                class="text-uppercase text-danger"
+                style="font-size: 0.7rem; letter-spacing: 1px"
+                >Custo da Capacidade Ociosa</span
+              >
+              <h5 class="mt-2 mb-0 fw-bold text-danger">
+                R$ {{ custo_ociosidade | moeda_br }}
+              </h5>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Receita Potencial (Limpo e Executivo) -->
+        <div class="col-md-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-body p-3 bg-white rounded">
+              <span
+                class="text-uppercase text-dark"
+                style="font-size: 0.7rem; letter-spacing: 1px"
+                >Receita Pot. Não Capturada</span
+              >
+              <h5 class="mt-2 mb-0 fw-bold text-dark">
+                R$ {{ receita_potencial | moeda_br }}
+              </h5>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Margem Potencial (Destaque Verde Esmeralda) -->
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body p-3 bg-empresa text-white rounded">
+              <span
+                class="text-uppercase text-white"
+                style="font-size: 0.7rem; letter-spacing: 1px"
+                >Margem Potencial</span
+              >
+              <h5 class="mt-2 mb-0 fw-bold">
+                R$ {{ margem_potencial | moeda_br }}
+              </h5>
+            </div>
+          </div>
         </div>
       </div>
 
