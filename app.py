@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 import os
+from flask_login import LoginManager, login_required, current_user
+from auth import auth_bp, inicializar_auth
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_logistica_2026'
@@ -27,6 +29,15 @@ if database_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
 
+# Gerenciador de Acesso
+login_manager = LoginManager(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = "Por favor, faça login para acessar o sistema."
+login_manager.login_message_category = "warning"
+
+# Conecta a tabela de usuários e registra as rotas de login
+Usuario = inicializar_auth(app, db, login_manager)
+app.register_blueprint(auth_bp)
 
 # 2. Desenhando a Tabela do Banco de Dados (Molde)
 class CentroDistribuicao(db.Model):
@@ -298,6 +309,7 @@ def rentabilidade_clientes(cd_id):
     return render_template('rentabilidade.html', cd=cd_atual, custo_posicao=custo_posicao, resultados=lista_resultados)
 
 @app.route('/')
+@login_required
 def painel_gerencial():
     todos_cds = CentroDistribuicao.query.all()
     todas_operacoes = OperacaoCliente.query.all()
