@@ -15,21 +15,31 @@
   <body class="bg-light">
     <div class="container mt-5 mb-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Bloco 1: Textos (Ficará na esquerda) -->
         <div>
-          <h2 class="fw-bold text-dark mb-1">
+          <h2 class="fw-bold text-dark mb-0">
             Custos Operacionais: {{ cd.nome }}
           </h2>
-          <span class="text-muted"
-            >Base para cálculo de rateio e ponto de equilíbrio</span
+          <small class="text-muted"
+            >Base para cálculo de rateio e ponto de equilíbrio</small
           >
         </div>
-        <a href="/cadastro" class="btn btn-outline-secundaria"
-          >← Voltar para Cadastros</a
-        >
 
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
-          Sair
-        
+        <!-- Bloco 2: A "Caixa" empacotando os botões (Ficará na direita) -->
+        <div class="d-flex gap-2 align-items-center">
+          <a
+            href="{{ url_for('tela_cadastro') }}"
+            class="btn btn-outline-secondary btn-sm"
+          >
+            ← Voltar para Cadastros
+          </a>
+          <a
+            href="{{ url_for('auth.logout') }}"
+            class="btn btn-outline-danger btn-sm"
+          >
+            Sair
+          </a>
+        </div>
       </div>
 
       <!-- 1. CARTÕES RESUMO DO CD -->

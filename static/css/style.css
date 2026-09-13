@@ -116,3 +116,38 @@ body {
   font-size: 0.78rem;
   font-weight: 600;
 }
+
+/* 7. Tela de Autenticação / Login */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-login {
+  width: 100%;
+  max-width: 420px;
+  background-color: #ffffff;
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.brand-title {
+  color: var(--cor-primaria);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.brand-subtitle {
+  color: var(--cor-grafite-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.form-control:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 0.2rem rgba(0, 191, 165, 0.25);
+}

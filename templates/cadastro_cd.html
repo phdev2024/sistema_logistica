@@ -15,19 +15,29 @@
   <body class="bg-light">
     <div class="container mt-5 mb-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Bloco da Esquerda: Títulos -->
         <div>
-          <h2 class="fw-bold text-dark mb-1">Bases Operacionais</h2>
-          <span class="text-muted"
-            >Cadastro e infraestrutura dos centros de distribuição</span
+          <h2 class="fw-bold text-dark mb-0">Bases Operacionais</h2>
+          <small class="text-muted"
+            >Cadastro e infraestrutura dos centros de distribuição</small
           >
         </div>
-        <a href="/" class="btn btn-outline-secundaria"
-          >← Voltar para o Dashboard</a
-        >
 
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
-          Sair
-
+        <!-- Bloco da Direita: Pacote com os dois botões juntos -->
+        <div class="d-flex gap-2 align-items-center">
+          <a
+            href="{{ url_for('painel_gerencial') }}"
+            class="btn btn-outline-secondary btn-sm"
+          >
+            ← Voltar para o Dashboard
+          </a>
+          <a
+            href="{{ url_for('auth.logout') }}"
+            class="btn btn-outline-danger btn-sm"
+          >
+            Sair
+          </a>
+        </div>
       </div>
 
       <!-- MENSAGENS FLASH -->

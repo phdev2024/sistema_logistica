@@ -12,61 +12,8 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
-    <style>
-      body {
-        background-color: #f8f9fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        margin: 0;
-        font-family: system-ui, -apple-system, sans-serif;
-      }
-      .card-login {
-        width: 100%;
-        max-width: 420px;
-        background: #ffffff;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-      }
-      .brand-title {
-        color: #212529;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-      }
-      .brand-subtitle {
-        color: #6c757d;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      .form-control {
-        border-radius: 8px;
-        padding: 0.65rem 0.9rem;
-        border: 1px solid #ced4da;
-      }
-      .form-control:focus {
-        border-color: #00b894;
-        box-shadow: 0 0 0 0.2rem rgba(0, 184, 148, 0.25);
-      }
-      .btn-entrar {
-        background-color: #212529;
-        border-color: #212529;
-        color: #ffffff;
-        font-weight: 600;
-        padding: 0.7rem;
-        border-radius: 8px;
-        transition: all 0.2s ease-in-out;
-      }
-      .btn-entrar:hover {
-        background-color: #00b894;
-        border-color: #00b894;
-        color: #ffffff;
-      }
-    </style>
   </head>
-  <body>
+  <body class="login-wrapper">
     <div class="card card-login p-4">
       <div class="text-center mb-4">
         <h3 class="brand-title mb-1">CheckUpLog</h3>
@@ -111,7 +58,7 @@
             autocomplete="current-password"
           />
         </div>
-        <button type="submit" class="btn btn-entrar w-100">
+        <button type="submit" class="btn btn-empresa w-100 py-2">
           Acessar Painel
         </button>
       </form>
