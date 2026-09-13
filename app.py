@@ -438,9 +438,19 @@ def excluir_cliente(cliente_id):
     cliente_para_apagar = OperacaoCliente.query.get_or_404(cliente_id)
     cd_de_origem = cliente_para_apagar.cd_id
     
+    # 1. Investigação de segurança: Este cliente tem paletes movimentados no histórico?
+    total_movimentacoes = MovimentacaoFisica.query.filter_by(cliente_id=cliente_id).count()
+
+    # 2. A Trava Lógica de Proteção
+    if total_movimentacoes > 0:
+        flash("BLOQUEIO DE SEGURANÇA: Este cliente possui movimentações físicas registradas. Exclua o histórico de movimentação antes de excluir o cliente.", "danger")
+        return redirect(url_for('rentabilidade_clientes', cd_id=cd_de_origem))
+    
+    # 3. Execução livre (se não houver amarrações)
     db.session.delete(cliente_para_apagar)
     db.session.commit()
     
+    flash("Cliente excluído com sucesso!", "success")
     return redirect(url_for('rentabilidade_clientes', cd_id=cd_de_origem))
 
 # Rota para editar os dados de faturamento e ocupação
