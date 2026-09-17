@@ -13,7 +13,26 @@
     />
   </head>
   <body class="bg-light">
-    <div class="container mt-5">
+    <div class="container mt-5 mb-5">
+      <!-- CAIXA DE MENSAGENS (FLASH) -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm"
+        role="alert"
+      >
+        <strong>{{ message }}</strong>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+      <!-- FIM DA CAIXA DE MENSAGENS -->
+
+      <!-- Bloco Único: Título e Botões -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 class="fw-bold text-dark mb-0">Check Up Executivo</h2>
@@ -21,13 +40,17 @@
             >Usuário: <strong>{{ current_user.nome }}</strong></small
           >
         </div>
-        <div class="d-flex gap-2">
-          <a href="/cadastro" class="btn btn-outline-secundaria fw-bold">
+
+        <div class="d-flex gap-2 align-items-center">
+          <a
+            href="{{ url_for('tela_cadastro') }}"
+            class="btn btn-outline-secundaria btn-sm fw-bold"
+          >
             + Gerenciar Bases Operacionais
           </a>
           <a
             href="{{ url_for('auth.logout') }}"
-            class="btn btn-outline-danger btn-sm d-flex align-items-center"
+            class="btn btn-outline-danger btn-sm"
           >
             Sair
           </a>
