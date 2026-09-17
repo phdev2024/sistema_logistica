@@ -547,6 +547,19 @@ def excluir_movimentacao(mov_id):
     flash("Apontamento excluído com sucesso!", "success")
     return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
 
+@app.route('/atualizar_banco_nuvem')
+def atualizar_banco_nuvem():
+    from sqlalchemy import text
+    try:
+        # A Ordem Direta ao Computador:
+        # "Altere a tabela custo_cd, adicione a coluna categoria tipo texto (até 50 letras). 
+        # Para as despesas que meu sócio já cadastrou antes, preencha com 'Outros' para não ficar vazio."
+        db.session.execute(text("ALTER TABLE custo_cd ADD COLUMN categoria VARCHAR(50) DEFAULT 'Outros';"))
+        db.session.commit()
+        return "SUCESSO: Coluna 'categoria' adicionada no banco de produção! Você já pode acessar o sistema."
+    except Exception as e:
+        return f"Ocorreu um erro ou a coluna já foi adicionada: {e}"
+
 
 if __name__ == '__main__':
     # 4. Ordem para criar o arquivo do banco antes de ligar o servidor
