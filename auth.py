@@ -12,6 +12,9 @@ def inicializar_auth(app, db, login_manager):
     class Usuario(UserMixin, db.Model):
         __tablename__ = 'usuario'
         id = db.Column(db.Integer, primary_key=True)
+        # O crachá invisível que liga o usuário à sua empresa
+        empresa_id = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=False)
+        id = db.Column(db.Integer, primary_key=True)
         email = db.Column(db.String(120), unique=True, nullable=False)
         nome = db.Column(db.String(100), nullable=False)
         senha_hash = db.Column(db.String(256), nullable=False)

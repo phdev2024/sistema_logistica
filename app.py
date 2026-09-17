@@ -39,9 +39,18 @@ login_manager.login_message_category = "warning"
 Usuario = inicializar_auth(app, db, login_manager)
 app.register_blueprint(auth_bp)
 
-# 2. Desenhando a Tabela do Banco de Dados (Molde)
+# --- MOLDE 0: EMPRESA (O Isolamento do SaaS) ---
+class Empresa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    razao_social = db.Column(db.String(150), nullable=False)
+    cnpj = db.Column(db.String(20), unique=True, nullable=True)
+    plano_assinatura = db.Column(db.String(50), default='Básico') # Básico, Premium, Standard
+    
+# --- MOLDE 1: CENTRO DE DISTRIBUIÇÃO ---
 class CentroDistribuicao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # A etiqueta de segurança: Quem é o dono deste CD?
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=False) 
     nome = db.Column(db.String(100), nullable=False)
     metragem = db.Column(db.Float, nullable=False)
     capacidade_paletes = db.Column(db.Integer, nullable=False)
@@ -98,29 +107,27 @@ with app.app_context():
 @app.route('/cadastro', methods=['GET', 'POST'])
 @login_required
 def tela_cadastro():
-    # 1. Separando quem está acessando de quem está enviando dados
     if request.method == 'POST':
-        # 2. Desempacotando os dados enviados pelo navegador
         nome_digitado = request.form.get('nome_cd')
         metragem_digitada = request.form.get('metragem_m2') or 0
         capacidade_digitada = request.form.get('capacidade_paletes') or 0
 
-        # 3. Preenchendo o molde da tabela
         novo_cd = CentroDistribuicao(
+            empresa_id=current_user.empresa_id, # <-- AQUI ESTÁ O CARIMBO DE ISOLAMENTO (SaaS)
             nome=nome_digitado,
             metragem=float(metragem_digitada),
             capacidade_paletes=int(capacidade_digitada)
         )
 
-        # 4. Efetuando a gravação física
         db.session.add(novo_cd)
         db.session.commit()
+        
+        flash("Base cadastrada com sucesso!", "success")
+        return redirect(url_for('tela_cadastro'))
 
-        # 5. Reiniciando o ciclo
-     # 1. Buscando todos os registros no banco
-    lista_cds = CentroDistribuicao.query.all()
+    # A LEITURA BLINDADA: Busca APENAS os CDs da empresa logada
+    lista_cds = CentroDistribuicao.query.filter_by(empresa_id=current_user.empresa_id).all()
     
-    # 2. Enviando a lista para a tela HTML
     return render_template('cadastro_cd.html', cds=lista_cds)
 
 # Rota para editar os dados físicos de um CD existente
@@ -312,8 +319,14 @@ def rentabilidade_clientes(cd_id):
 @app.route('/')
 @login_required
 def painel_gerencial():
-    todos_cds = CentroDistribuicao.query.all()
-    todas_operacoes = OperacaoCliente.query.all()
+    # 1. Busca apenas os CDs que pertencem à empresa do usuário logado
+    todos_cds = CentroDistribuicao.query.filter_by(empresa_id=current_user.empresa_id).all()
+    
+    # 2. Descobre os IDs desses CDs (Ex: [1, 2, 5])
+    meus_cd_ids = [cd.id for cd in todos_cds]
+    
+    # 3. Busca apenas as Operações (Clientes) que moram dentro dos MEUS CDs
+    todas_operacoes = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
     
     # 1. PREPARAÇÃO
     espaco_vendido_por_cd = {}
@@ -547,18 +560,29 @@ def excluir_movimentacao(mov_id):
     flash("Apontamento excluído com sucesso!", "success")
     return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
 
-@app.route('/atualizar_banco_nuvem')
-def atualizar_banco_nuvem():
+@app.route('/migrar_saas')
+def migrar_saas():
     from sqlalchemy import text
     try:
-        # A Ordem Direta ao Computador:
-        # "Altere a tabela custo_cd, adicione a coluna categoria tipo texto (até 50 letras). 
-        # Para as despesas que meu sócio já cadastrou antes, preencha com 'Outros' para não ficar vazio."
-        db.session.execute(text("ALTER TABLE custo_cd ADD COLUMN categoria VARCHAR(50) DEFAULT 'Outros';"))
+        # 1. Cria a tabela Empresa (se não existir)
+        db.create_all()
+        
+        # 2. Insere a Empresa Padrão para abrigar os dados atuais
+        db.session.execute(text("INSERT INTO empresa (razao_social, plano_assinatura) VALUES ('Logcare Matriz', 'Premium');"))
         db.session.commit()
-        return "SUCESSO: Coluna 'categoria' adicionada no banco de produção! Você já pode acessar o sistema."
+        
+        # 3. Descobre qual foi o ID gerado para essa empresa
+        resultado = db.session.execute(text("SELECT id FROM empresa LIMIT 1;"))
+        empresa_padrao_id = resultado.scalar()
+        
+        # 4. Injeta a coluna nova nos dados antigos e carimba com o ID da empresa
+        db.session.execute(text(f"ALTER TABLE usuario ADD COLUMN empresa_id INTEGER DEFAULT {empresa_padrao_id};"))
+        db.session.execute(text(f"ALTER TABLE centro_distribuicao ADD COLUMN empresa_id INTEGER DEFAULT {empresa_padrao_id};"))
+        db.session.commit()
+        
+        return f"SUCESSO: Banco de produção migrado para SaaS! Dados antigos alocados na Empresa ID {empresa_padrao_id}."
     except Exception as e:
-        return f"Ocorreu um erro ou a coluna já foi adicionada: {e}"
+        return f"Ocorreu um erro ou o banco já foi migrado: {e}"
 
 
 if __name__ == '__main__':
