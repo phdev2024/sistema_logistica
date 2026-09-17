@@ -54,6 +54,7 @@ class CustoCD(db.Model):
     descricao_item = db.Column(db.String(150), nullable=False) # Ex: Aluguel, Fita Stretch
     tipo_custo = db.Column(db.String(50), nullable=False)      # Fixo, Variável ou Mão de Obra
     valor = db.Column(db.Float, nullable=False)
+    categoria = db.Column(db.String(50), nullable=False, default='Outros')
 
 # --- MOLDE 3: OPERAÇÕES DOS CLIENTES (Faturamento e Ocupação) ---
 class OperacaoCliente(db.Model):
@@ -164,31 +165,33 @@ def excluir_cd(cd_id):
 @app.route('/custos/<int:cd_id>', methods=['GET', 'POST'])
 @login_required
 def gerenciar_custos(cd_id):
-    # Buscando o CD específico no banco
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     
+    # 1. SE O USUÁRIO CLICOU EM SALVAR (POST)
     if request.method == 'POST':
         novo_custo = CustoCD(
-            cd_id=cd_atual.id,
+            cd_id=cd_id, 
             mes_referencia=request.form.get('mes_ref'),
-            descricao_item=request.form.get('descricao'),
-            tipo_custo=request.form.get('tipo'),
-            valor=float(request.form.get('valor'))
+            descricao_item=request.form.get('descricao'), 
+            valor=float(request.form.get('valor')), 
+            tipo_custo=request.form.get('tipo'), # Captura do name="tipo"
+            categoria=request.form.get('categoria', 'Outros') # A nossa nova coluna
         )
         db.session.add(novo_custo)
         db.session.commit()
+        
+        flash("Custo adicionado com sucesso!", "success")
         return redirect(url_for('gerenciar_custos', cd_id=cd_id))
-    
-    # Buscando todos os custos já lançados para este CD
+        
+    # 2. SE O USUÁRIO APENAS ABRIU A TELA (GET)
     custos_cadastrados = CustoCD.query.filter_by(cd_id=cd_id).all()
     
-    # --- INÍCIO DA MATEMÁTICA DO CHECKUP ---
+    # --- MATEMÁTICA DO CHECKUP ---
     total_fixo = 0
     for despesa in custos_cadastrados:
         if despesa.tipo_custo == 'Fixo':
             total_fixo += despesa.valor
             
-    # Regra de Rateio: Prioriza palete. Se não tiver (zero), usa metragem.
     if cd_atual.capacidade_paletes > 0:
         divisor = cd_atual.capacidade_paletes
         nome_divisor = "Posição Palete"
@@ -196,11 +199,9 @@ def gerenciar_custos(cd_id):
         divisor = cd_atual.metragem
         nome_divisor = "m²"
         
-    # Prevenção de erro: não dividir por zero
     custo_unitario = total_fixo / divisor if divisor > 0 else 0
-    # --- FIM DA MATEMÁTICA ---
-
-    # Atualize esta última linha para enviar os cálculos para a tela
+    
+    # ÚNICO RETORNO: O computador finaliza o trabalho enviando TUDO para a tela
     return render_template(
         'gerenciar_custos.html', 
         cd=cd_atual, 
@@ -210,9 +211,6 @@ def gerenciar_custos(cd_id):
         nome_divisor=nome_divisor,
         custo_unitario=custo_unitario
     )
-
-    
-    return render_template('gerenciar_custos.html', cd=cd_atual, custos=custos_cadastrados)
 
 # Rota para deletar um custo lançado errado
 @app.route('/excluir_custo/<int:custo_id>', methods=['POST'])
@@ -235,24 +233,20 @@ def excluir_custo(custo_id):
 @app.route('/editar_custo/<int:custo_id>', methods=['GET', 'POST'])
 @login_required
 def editar_custo(custo_id):
-    # 1. Buscando a despesa exata no banco de dados
-    custo_atual = CustoCD.query.get_or_404(custo_id)
+    custo = CustoCD.query.get_or_404(custo_id)
     
     if request.method == 'POST':
-        # 2. Substituindo os valores antigos pelos novos digitados na tela
-        custo_atual.mes_referencia = request.form.get('mes_ref')
-        custo_atual.descricao_item = request.form.get('descricao')
-        custo_atual.tipo_custo = request.form.get('tipo')
-        custo_atual.valor = float(request.form.get('valor'))
+        custo.mes_referencia = request.form.get('mes_ref')
+        custo.descricao_item = request.form.get('descricao')
+        custo.valor = float(request.form.get('valor'))
+        custo.tipo_custo = request.form.get('tipo')
+        custo.categoria = request.form.get('categoria', 'Outros')
         
-        # 3. Batendo o martelo para salvar a alteração
         db.session.commit()
-        
-        # 4. Devolvendo o usuário para a tela do CD correto
-        return redirect(url_for('gerenciar_custos', cd_id=custo_atual.cd_id))
-        
-    # Se for método GET (apenas abrir a página), mostra a tela de edição
-    return render_template('editar_custo.html', custo=custo_atual)
+        flash("Custo atualizado com sucesso!", "success")
+        return redirect(url_for('gerenciar_custos', cd_id=custo.cd_id))
+
+    return render_template('editar_custo.html', custo=custo)
 
 @app.route('/rentabilidade/<int:cd_id>', methods=['GET', 'POST'])
 @login_required
@@ -321,43 +315,39 @@ def painel_gerencial():
     todos_cds = CentroDistribuicao.query.all()
     todas_operacoes = OperacaoCliente.query.all()
     
-    # 1. PREPARAÇÃO: Dicionários para guardar o Faturamento e Espaço por CD
+    # 1. PREPARAÇÃO
     espaco_vendido_por_cd = {}
     faturamento_por_cd = {}
-    
     faturamento_global = 0
     custo_operacional_global = 0
     total_variavel_global = 0
-    clientes_rentaveis = 0
-    clientes_atencao = 0
-    clientes_deficitarios = 0
+    clientes_rentaveis = clientes_atencao = clientes_deficitarios = 0
 
-    # 2. COLETA DE DADOS: O que já aconteceu de verdade?
+    # 2. COLETA DE DADOS (Faturamento e Ocupação)
     for op in todas_operacoes:
         espaco_vendido_por_cd[op.cd_id] = espaco_vendido_por_cd.get(op.cd_id, 0) + op.paletes_ocupados
         faturamento_por_cd[op.cd_id] = faturamento_por_cd.get(op.cd_id, 0) + op.faturamento
-        
         faturamento_global += op.faturamento
         total_variavel_global += op.custo_variavel
 
-    # Variáveis de controle globais
-    capacidade_paletes_rede = 0
-    custo_rede_paletes = 0
-    capacidade_m2_rede = 0
-    custo_rede_m2 = 0
-    
-    # Gavetas da Inteligência Comercial (Ociosidade)
-    custo_ociosidade_global = 0
-    receita_potencial_global = 0
-    posicoes_vazias_rede = 0
-    
+    capacidade_paletes_rede = custo_rede_paletes = capacidade_m2_rede = custo_rede_m2 = 0
+    custo_ociosidade_global = receita_potencial_global = posicoes_vazias_rede = 0
     resumo_bases = [] 
     memoria_custo_cd = {}
+    
+    # --- NOVA LÓGICA DA MINI-DRE: As 4 Gavetas ---
+    gavetas_dre = {'Armazenagem': 0, 'Mão de Obra': 0, 'Movimentação': 0, 'Outros': 0}
 
-    # 3. INTELIGÊNCIA COMERCIAL: Loop de cálculo por Base Operacional
+    # 3. LOOP POR BASE (Inteligência Comercial e Custos)
     for cd in todos_cds:
         custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
-        soma_fixo = sum(conta.valor for conta in custos_fixos_cd)
+        soma_fixo = 0
+        
+        for conta in custos_fixos_cd:
+            soma_fixo += conta.valor
+            # Guardando o dinheiro na gaveta correta para o gráfico
+            cat = conta.categoria if conta.categoria else 'Outros'
+            gavetas_dre[cat] = gavetas_dre.get(cat, 0) + conta.valor
         
         if cd.capacidade_paletes > 0:
             divisor = cd.capacidade_paletes
@@ -370,55 +360,43 @@ def painel_gerencial():
             capacidade_m2_rede += divisor
             custo_rede_m2 += soma_fixo
             
-        # A Pergunta: "Qual o custo de UMA posição?"
         custo_unitario = soma_fixo / divisor if divisor > 0 else 0
         memoria_custo_cd[cd.id] = custo_unitario
         
         espaco_vendido = espaco_vendido_por_cd.get(cd.id, 0)
-        espaco_vazio = divisor - espaco_vendido
-        if espaco_vazio < 0: 
-            espaco_vazio = 0
+        espaco_vazio = divisor - espaco_vendido if divisor > espaco_vendido else 0
             
-        # --- INÍCIO DA RESPOSTA AO SÓCIO ---
-        
-        # A Pergunta: "Qual o Custo da Capacidade Ociosa?"
         dinheiro_queimado = espaco_vazio * custo_unitario
         custo_ociosidade_global += dinheiro_queimado
         
-        # A Pergunta: "Por quanto estamos vendendo cada posição na realidade?" (Ticket Médio)
-        faturamento_deste_cd = faturamento_por_cd.get(cd.id, 0)
-        ticket_medio = faturamento_deste_cd / espaco_vendido if espaco_vendido > 0 else 0
-        
-        # A Pergunta: "Se vendermos todo o espaço vazio por esse preço, quanto entra a mais?"
-        receita_potencial = espaco_vazio * ticket_medio
-        receita_potencial_global += receita_potencial
+        ticket_medio = faturamento_por_cd.get(cd.id, 0) / espaco_vendido if espaco_vendido > 0 else 0
+        receita_potencial_global += espaco_vazio * ticket_medio
         
         if unidade == "Paletes":
             posicoes_vazias_rede += espaco_vazio
         
-        # --- FIM DA RESPOSTA ---
-        
         resumo_bases.append({
-            'nome': cd.nome,
-            'custo_total': soma_fixo,
-            'capacidade': divisor,
-            'unidade': unidade,
-            'custo_unitario': custo_unitario,
-            'espaco_vazio': espaco_vazio
+            'nome': cd.nome, 'custo_total': soma_fixo, 'capacidade': divisor,
+            'unidade': unidade, 'custo_unitario': custo_unitario, 'espaco_vazio': espaco_vazio
         })
         
-    # 4. As Médias Independentes da Rede
     media_palete = custo_rede_paletes / capacidade_paletes_rede if capacidade_paletes_rede > 0 else 0
     media_m2 = custo_rede_m2 / capacidade_m2_rede if capacidade_m2_rede > 0 else 0
 
-    # 5. Fechamento da Margem Global e Classificação de Clientes
+    # 4. FECHAMENTO DA MINI-DRE (Calculando as Porcentagens)
+    total_custo_rede = custo_rede_paletes + custo_rede_m2
+    porcentagens_dre = {}
+    if total_custo_rede > 0:
+        for cat, valor in gavetas_dre.items():
+            porcentagens_dre[cat] = (valor / total_custo_rede) * 100
+    else:
+        porcentagens_dre = {'Armazenagem': 0, 'Mão de Obra': 0, 'Movimentação': 0, 'Outros': 0}
+
+    # 5. RENTABILIDADE DOS CLIENTES
     for op in todas_operacoes:
-        custo_base_cliente = memoria_custo_cd.get(op.cd_id, 0)
-        custo_total_cliente = (op.paletes_ocupados * custo_base_cliente) + op.custo_variavel
+        custo_total_cliente = (op.paletes_ocupados * memoria_custo_cd.get(op.cd_id, 0)) + op.custo_variavel
         custo_operacional_global += custo_total_cliente
-        
-        lucro = op.faturamento - custo_total_cliente
-        margem = (lucro / op.faturamento * 100) if op.faturamento > 0 else 0
+        margem = ((op.faturamento - custo_total_cliente) / op.faturamento * 100) if op.faturamento > 0 else 0
         
         if margem >= 20: clientes_rentaveis += 1
         elif margem > 0: clientes_atencao += 1
@@ -426,31 +404,19 @@ def painel_gerencial():
             
     lucro_global = faturamento_global - custo_operacional_global
     margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
-
-    # 6. Break-even e Margem Potencial (Receita que viria - Custo que já pagamos)
-    total_custo_rede = custo_rede_paletes + custo_rede_m2
     margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
     ponto_equilibrio = total_custo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
-    
-    # Se ocuparmos o espaço, o custo fixo não muda. A receita potencial vira lucro quase puro.
     margem_potencial = receita_potencial_global - custo_ociosidade_global
 
     return render_template(
         'dashboard.html',
-        media_palete=media_palete,
-        media_m2=media_m2,
-        bases=resumo_bases,
-        faturamento=faturamento_global,
-        custo_ops=custo_operacional_global,
-        margem=margem_global,
-        rentaveis=clientes_rentaveis,
-        atencao=clientes_atencao,
-        deficitarios=clientes_deficitarios,
-        custo_ociosidade=custo_ociosidade_global,
-        ponto_equilibrio=ponto_equilibrio,
-        receita_potencial=receita_potencial_global,
-        margem_potencial=margem_potencial,
-        posicoes_vazias=posicoes_vazias_rede
+        media_palete=media_palete, media_m2=media_m2, bases=resumo_bases,
+        faturamento=faturamento_global, custo_ops=custo_operacional_global,
+        margem=margem_global, rentaveis=clientes_rentaveis, atencao=clientes_atencao, deficitarios=clientes_deficitarios,
+        custo_ociosidade=custo_ociosidade_global, ponto_equilibrio=ponto_equilibrio,
+        receita_potencial=receita_potencial_global, margem_potencial=margem_potencial, posicoes_vazias=posicoes_vazias_rede,
+        # Enviando os cálculos da DRE para o HTML:
+        dre_valores=gavetas_dre, dre_pct=porcentagens_dre
     )
 
 # Rota para deletar um cliente lançado errado

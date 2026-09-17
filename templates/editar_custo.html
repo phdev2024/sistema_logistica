@@ -25,19 +25,29 @@
             <div class="card-body">
                 <form method="POST">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label fw-semibold text-secondary">Mês Referência</label>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Mês</label>
                             <input type="month" class="form-control" name="mes_ref" value="{{ custo.mes_referencia }}" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-semibold text-secondary">Descrição da Despesa</label>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Descrição</label>
                             <input type="text" class="form-control" name="descricao" value="{{ custo.descricao_item }}" required>
                         </div>
+                        <!-- NOVA CAIXA DE CATEGORIA NA EDIÇÃO -->
                         <div class="col-md-3 mb-3">
-                            <label class="form-label fw-semibold text-secondary">Tipo de Custo</label>
+                            <label class="form-label fw-semibold text-secondary">Categoria (DRE)</label>
+                            <select name="categoria" class="form-select" required>
+                                <option value="Armazenagem" {% if custo.categoria == 'Armazenagem' %}selected{% endif %}>Armazenagem</option>
+                                <option value="Mão de Obra" {% if custo.categoria == 'Mão de Obra' %}selected{% endif %}>Mão de Obra</option>
+                                <option value="Movimentação" {% if custo.categoria == 'Movimentação' %}selected{% endif %}>Movimentação</option>
+                                <option value="Outros" {% if custo.categoria == 'Outros' %}selected{% endif %}>Outros</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Tipo</label>
                             <select name="tipo" class="form-select" required>
-                                <option value="Fixo" {% if custo.tipo_custo == 'Fixo' %}selected{% endif %}>Fixo (Estrutural)</option>
-                                <option value="Variável" {% if custo.tipo_custo == 'Variável' %}selected{% endif %}>Variável (Operacional)</option>
+                                <option value="Fixo" {% if custo.tipo_custo == 'Fixo' %}selected{% endif %}>Fixo</option>
+                                <option value="Variável" {% if custo.tipo_custo == 'Variável' %}selected{% endif %}>Variável</option>
                             </select>
                         </div>
                         <div class="col-md-2 mb-3">

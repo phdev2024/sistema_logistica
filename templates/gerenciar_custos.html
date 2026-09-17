@@ -42,6 +42,23 @@
         </div>
       </div>
 
+      <!-- CAIXA DE MENSAGENS (FLASH) -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show"
+        role="alert"
+      >
+        <strong>{{ message }}</strong>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
       <!-- 1. CARTÕES RESUMO DO CD -->
       <div class="row text-center mb-4">
         <div class="col-md-4">
@@ -96,11 +113,9 @@
         </div>
         <div class="card-body">
           <form method="POST">
-            <div class="row">
-              <div class="col-md-3 mb-3">
-                <label class="form-label fw-semibold text-secondary"
-                  >Mês Referência</label
-                >
+            <div class="row align-items-end">
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-semibold text-secondary">Mês</label>
                 <input
                   type="month"
                   class="form-control"
@@ -108,25 +123,42 @@
                   required
                 />
               </div>
-              <div class="col-md-4 mb-3">
+              <div class="col-md-3 mb-3">
                 <label class="form-label fw-semibold text-secondary"
-                  >Descrição da Despesa</label
+                  >Descrição</label
                 >
                 <input
                   type="text"
                   class="form-control"
                   name="descricao"
-                  placeholder="Ex: Aluguel, IPTU, Energia"
                   required
                 />
               </div>
+              <!-- CAIXA DE CATEGORIA AQUI NO FORMULÁRIO -->
               <div class="col-md-3 mb-3">
                 <label class="form-label fw-semibold text-secondary"
-                  >Tipo de Custo</label
+                  >Categoria (DRE)</label
+                >
+                <select name="categoria" class="form-select" required>
+                  <option value="Armazenagem">
+                    Armazenagem (Aluguel/IPTU)
+                  </option>
+                  <option value="Mão de Obra">
+                    Mão de Obra (Salários/Encargos)
+                  </option>
+                  <option value="Movimentação">
+                    Movimentação (Equipamentos/Combustível)
+                  </option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div class="col-md-2 mb-3">
+                <label class="form-label fw-semibold text-secondary"
+                  >Tipo</label
                 >
                 <select name="tipo" class="form-select" required>
-                  <option value="Fixo" selected>Fixo (Estrutural)</option>
-                  <option value="Variável">Variável (Operacional)</option>
+                  <option value="Fixo" selected>Fixo</option>
+                  <option value="Variável">Variável</option>
                 </select>
               </div>
               <div class="col-md-2 mb-3">
@@ -138,14 +170,13 @@
                   step="0.01"
                   class="form-control"
                   name="valor"
-                  placeholder="0.00"
                   required
                 />
               </div>
             </div>
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn btn-empresa px-4">
-                Registrar Custo na Base
+                Salvar Custo
               </button>
             </div>
           </form>
@@ -162,13 +193,14 @@
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th style="width: 15%">Mês</th>
-                  <th style="width: 45%">Descrição</th>
-                  <th style="width: 12%">Tipo</th>
+                  <th style="width: 10%">Mês</th>
+                  <th style="width: 35%">Descrição</th>
+                  <th style="width: 15%">Categoria</th>
+                  <th style="width: 10%">Tipo</th>
                   <th style="width: 15%">Valor</th>
                   <th
                     class="text-end"
-                    style="width: 13%; padding-right: 1.5rem"
+                    style="width: 15%; padding-right: 1.5rem"
                   >
                     Ações
                   </th>
@@ -183,6 +215,14 @@
                       >{{ despesa.descricao_item }}</strong
                     >
                   </td>
+
+                  <!-- O PYTHON IMPRIME A ETIQUETA SALVA NO BANCO AQUI -->
+                  <td>
+                    <span class="badge bg-secondary"
+                      >{{ despesa.categoria }}</span
+                    >
+                  </td>
+
                   <td>
                     {% if despesa.tipo_custo == 'Fixo' %}
                     <span class="badge bg-light text-dark border">Fixo</span>
@@ -190,7 +230,8 @@
                     <span class="badge bg-warning text-dark">Variável</span>
                     {% endif %}
                   </td>
-                  <td class="fw-bold text-dark">
+
+                  <td class="fw-bold text-dark text-nowrap">
                     R$ {{ despesa.valor | moeda_br }}
                   </td>
                   <td class="text-end" style="padding-right: 1.5rem">

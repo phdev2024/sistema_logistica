@@ -219,6 +219,97 @@
         </div>
       </div>
 
+      <!-- COMPOSIÇÃO DO CUSTO FIXO (MINI-DRE) -->
+      <h6 class="text-secondary fw-bold mt-4 mb-3">
+        Composição do Custo Operacional Fixo (Mini-DRE)
+      </h6>
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-4 bg-white rounded">
+              <!-- Barra de Gráfico Horizontal (Agora puxando as cores do style.css) -->
+              <div
+                class="progress mb-4 shadow-sm"
+                style="height: 28px; font-size: 0.8rem; font-weight: 600"
+              >
+                <div
+                  class="progress-bar bg-dre-armazenagem"
+                  style="width: {{ dre_pct['Armazenagem'] }}%;"
+                >
+                  {{ "%.1f"|format(dre_pct['Armazenagem']) }}%
+                </div>
+                <div
+                  class="progress-bar bg-dre-maodeobra"
+                  style="width: {{ dre_pct['Mão de Obra'] }}%;"
+                >
+                  {{ "%.1f"|format(dre_pct['Mão de Obra']) }}%
+                </div>
+                <div
+                  class="progress-bar bg-dre-movimentacao"
+                  style="width: {{ dre_pct['Movimentação'] }}%;"
+                >
+                  {{ "%.1f"|format(dre_pct['Movimentação']) }}%
+                </div>
+                <div
+                  class="progress-bar bg-dre-outros"
+                  style="width: {{ dre_pct['Outros'] }}%;"
+                >
+                  {{ "%.1f"|format(dre_pct['Outros']) }}%
+                </div>
+              </div>
+
+              <!-- Legendas Financeiras Organizadas -->
+              <div class="row text-center text-dark small fw-bold">
+                <div class="col-md-3">
+                  <span class="dre-legend-box bg-dre-armazenagem"></span>
+                  <span
+                    class="text-uppercase text-secondary"
+                    style="font-size: 0.7rem; letter-spacing: 1px"
+                    >Armazenagem</span
+                  ><br />
+                  <span class="fs-6"
+                    >R$ {{ dre_valores['Armazenagem'] | moeda_br }}</span
+                  >
+                </div>
+                <div class="col-md-3">
+                  <span class="dre-legend-box bg-dre-maodeobra"></span>
+                  <span
+                    class="text-uppercase text-secondary"
+                    style="font-size: 0.7rem; letter-spacing: 1px"
+                    >Mão de Obra</span
+                  ><br />
+                  <span class="fs-6"
+                    >R$ {{ dre_valores['Mão de Obra'] | moeda_br }}</span
+                  >
+                </div>
+                <div class="col-md-3">
+                  <span class="dre-legend-box bg-dre-movimentacao"></span>
+                  <span
+                    class="text-uppercase text-secondary"
+                    style="font-size: 0.7rem; letter-spacing: 1px"
+                    >Movimentação</span
+                  ><br />
+                  <span class="fs-6"
+                    >R$ {{ dre_valores['Movimentação'] | moeda_br }}</span
+                  >
+                </div>
+                <div class="col-md-3">
+                  <span class="dre-legend-box bg-dre-outros"></span>
+                  <span
+                    class="text-uppercase text-secondary"
+                    style="font-size: 0.7rem; letter-spacing: 1px"
+                    >Outros</span
+                  ><br />
+                  <span class="fs-6"
+                    >R$ {{ dre_valores['Outros'] | moeda_br }}</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 5. TABELA DE DESEMPENHO POR BASE -->
       <div class="card shadow mb-5">
         <div class="card-header bg-empresa text-white">

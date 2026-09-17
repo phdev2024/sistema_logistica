@@ -151,3 +151,33 @@ body {
   border-color: var(--cor-primaria);
   box-shadow: 0 0 0 0.2rem rgba(0, 191, 165, 0.25);
 }
+
+/* =========================================
+   CORES E LEGENDAS DA MINI-DRE (DASHBOARD)
+========================================= */
+.bg-dre-armazenagem {
+  background-color: #00b894 !important;
+  color: white;
+}
+.bg-dre-maodeobra {
+  background-color: #212529 !important; /* Escuro */
+  color: white;
+}
+.bg-dre-movimentacao {
+  background-color: #fdcb6e !important; /* Amarelo/Laranja */
+  color: #2d3436;
+}
+.bg-dre-outros {
+  background-color: #6c757d !important; /* Cinza */
+  color: white;
+}
+
+/* O pequeno quadrado colorido que vai ao lado do texto na legenda */
+.dre-legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
