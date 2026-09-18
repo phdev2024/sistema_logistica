@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_login import LoginManager, login_required, current_user
 from auth import auth_bp, inicializar_auth
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_logistica_2026'
@@ -28,6 +29,34 @@ if database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
+
+# --- O PORTEIRO VIP (Controle de Planos SaaS) ---
+def requer_plano(plano_exigido):
+    def decorador(funcao_da_rota):
+        @wraps(funcao_da_rota)
+        def catraca_vip(*args, **kwargs):
+            # 1. A Pergunta: "Qual é o plano atual da empresa deste usuário?"
+            empresa_do_usuario = Empresa.query.get(current_user.empresa_id)
+            plano_atual = empresa_do_usuario.plano_assinatura
+
+            # 2. A Regra de Hierarquia (Quem pode acessar o quê)
+            planos_validos = []
+            if plano_exigido == 'Básico':
+                planos_validos = ['Básico', 'Standard', 'Premium']
+            elif plano_exigido == 'Standard':
+                planos_validos = ['Standard', 'Premium']
+            elif plano_exigido == 'Premium':
+                planos_validos = ['Premium'] # Só Premium acessa Premium
+
+            # 3. O Bloqueio
+            if plano_atual not in planos_validos:
+                flash(f"ACESSO RESTRITO: Esta funcionalidade exige o plano {plano_exigido}. Faça um upgrade para liberar!", "danger")
+                return redirect(url_for('painel_gerencial'))
+
+            # 4. A Liberação
+            return funcao_da_rota(*args, **kwargs)
+        return catraca_vip
+    return decorador
 
 # Gerenciador de Acesso
 login_manager = LoginManager(app)
@@ -257,6 +286,7 @@ def editar_custo(custo_id):
 
 @app.route('/rentabilidade/<int:cd_id>', methods=['GET', 'POST'])
 @login_required
+@requer_plano('Premium')
 def rentabilidade_clientes(cd_id):
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     
@@ -435,6 +465,7 @@ def painel_gerencial():
 # Rota para deletar um cliente lançado errado
 @app.route('/excluir_cliente/<int:cliente_id>', methods=['POST'])
 @login_required
+@requer_plano('Premium')
 def excluir_cliente(cliente_id):
     cliente_para_apagar = OperacaoCliente.query.get_or_404(cliente_id)
     cd_de_origem = cliente_para_apagar.cd_id
@@ -457,6 +488,7 @@ def excluir_cliente(cliente_id):
 # Rota para editar os dados de faturamento e ocupação
 @app.route('/editar_cliente/<int:cliente_id>', methods=['GET', 'POST'])
 @login_required
+@requer_plano('Premium')
 def editar_cliente(cliente_id):
     cliente_atual = OperacaoCliente.query.get_or_404(cliente_id)
     
@@ -560,6 +592,56 @@ def excluir_movimentacao(mov_id):
     flash("Apontamento excluído com sucesso!", "success")
     return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
 
+@app.route('/registrar', methods=['GET', 'POST'])
+def registrar_conta():
+    # Se o cara já está logado, não tem porquê criar conta
+    if current_user.is_authenticated:
+        return redirect(url_for('painel_gerencial'))
+
+    if request.method == 'POST':
+        # 1. O computador lê o que foi digitado na tela
+        razao_social = request.form.get('razao_social')
+        cnpj = request.form.get('cnpj')
+        email = request.form.get('email')
+        senha = request.form.get('senha')
+
+        # 2. A Trava de Segurança: Esse e-mail já existe?
+        from auth import UsuarioModel
+        if UsuarioModel.query.filter_by(email=email).first():
+            flash("Este e-mail já está cadastrado. Faça login.", "danger")
+            return redirect(url_for('registrar_conta'))
+
+        # 3. Criando a Empresa (A Casa)
+        nova_empresa = Empresa(razao_social=razao_social, cnpj=cnpj, plano_assinatura='Básico')
+        db.session.add(nova_empresa)
+        
+        # A MÁGICA: O comando 'flush' não salva definitivamente, ele apenas 
+        # "simula" o salvamento para que o banco de dados gere o ID da empresa.
+        db.session.flush() 
+
+        # 4. Criando o Usuário (O Dono) e amarrando o crachá
+        from werkzeug.security import generate_password_hash
+        from flask_login import login_user
+        
+        novo_usuario = UsuarioModel(
+            nome="Administrador", 
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            empresa_id=nova_empresa.id  # Pegamos o ID gerado pelo flush!
+        )
+        db.session.add(novo_usuario)
+        
+        # Agora sim, bate o martelo e salva a Empresa e o Usuário juntos no cofre
+        db.session.commit() 
+
+        # 5. Já faz o login automático para ele não ter que digitar a senha de novo
+        login_user(novo_usuario)
+        flash("Conta criada com sucesso! Bem-vindo ao CheckUpLog SaaS.", "success")
+        return redirect(url_for('painel_gerencial'))
+
+    # Se ele apenas acessou o link, mostra o formulário HTML
+    return render_template('registrar.html')
+
 @app.route('/migrar_saas')
 def migrar_saas():
     from sqlalchemy import text
@@ -568,7 +650,7 @@ def migrar_saas():
         db.create_all()
         
         # 2. Insere a Empresa Padrão para abrigar os dados atuais
-        db.session.execute(text("INSERT INTO empresa (razao_social, plano_assinatura) VALUES ('Logcare Matriz', 'Premium');"))
+        db.session.execute(text("INSERT INTO empresa (razao_social, plano_assinatura) VALUES ('Logcare Matriz', 'Básico');"))
         db.session.commit()
         
         # 3. Descobre qual foi o ID gerado para essa empresa
