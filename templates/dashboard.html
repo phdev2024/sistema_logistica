@@ -42,6 +42,16 @@
         </div>
 
         <div class="d-flex gap-2 align-items-center">
+          <!-- A PERGUNTA AO CÓDIGO: "O e-mail logado é o do dono?" -->
+          {% if current_user.email == 'admin@checkuplog.com' %}
+          <a
+            href="{{ url_for('registrar_conta') }}"
+            class="btn btn-warning btn-sm fw-bold text-dark"
+          >
+            + Cadastrar Novo Cliente
+          </a>
+          {% endif %}
+
           <a
             href="{{ url_for('tela_cadastro') }}"
             class="btn btn-outline-secundaria btn-sm fw-bold"

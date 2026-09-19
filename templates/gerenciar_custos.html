@@ -181,6 +181,24 @@
             </div>
           </form>
         </div>
+        <!-- BLOCO DE IMPORTAÇÃO EM MASSA (EXCEL) -->
+      <div class="card shadow-sm mb-4 border-empresa">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <!-- Coluna do Texto (ocupa 7 espaços em 12) -->
+                <div class="col-md-7">
+                    <h6 class="fw-bold mb-1 text-empresa">Importação em Massa (Excel)</h6>
+                    <small class="text-muted">Faça upload da sua folha de cálculo com as colunas: <strong>Mês, Descrição, Valor, Tipo, Categoria</strong>.</small>
+                </div>
+                <!-- Coluna do Formulário (ocupa 5 espaços em 12, alinhado à direita) -->
+                <div class="col-md-5">
+                    <form action="{{ url_for('importar_custos_excel', cd_id=cd.id) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 justify-content-end">
+                        <input type="file" name="arquivo_excel" class="form-control form-control-sm w-75" accept=".xlsx, .xls" required>
+                        <button type="submit" class="btn btn-empresa btn-sm fw-bold px-3">Importar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
       </div>
 
       <!-- 3. TABELA DE CUSTOS LANÇADOS -->

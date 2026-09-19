@@ -4,6 +4,7 @@ import os
 from flask_login import LoginManager, login_required, current_user
 from auth import auth_bp, inicializar_auth
 from functools import wraps
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_logistica_2026'
@@ -247,6 +248,62 @@ def gerenciar_custos(cd_id):
         nome_divisor=nome_divisor,
         custo_unitario=custo_unitario
     )
+
+@app.route('/importar_custos/<int:cd_id>', methods=['POST'])
+@login_required
+def importar_custos_excel(cd_id):
+    # 1. A Pergunta: "O utilizador enviou mesmo um ficheiro com o nome 'arquivo_excel'?"
+    if 'arquivo_excel' not in request.files:
+        flash("Nenhum ficheiro foi enviado.", "danger")
+        return redirect(url_for('gerenciar_custos', cd_id=cd_id))
+        
+    ficheiro = request.files['arquivo_excel']
+    
+    # 2. A Pergunta: "O ficheiro está vazio?"
+    if ficheiro.filename == '':
+        flash("Selecione um ficheiro válido.", "warning")
+        return redirect(url_for('gerenciar_custos', cd_id=cd_id))
+
+    try:
+        # 3. A Ordem ao Pandas: "Leia o Excel e transforme numa grelha de dados (DataFrame)"
+        df = pd.read_excel(ficheiro)
+
+        # --- A FAXINA (Data Cleaning) ---
+        # "Pegue o nome de todas as colunas (df.columns) e aplique a função de cortar espaços (str.strip)"
+        df.columns = df.columns.str.strip()
+        
+        custos_importados = 0
+        
+        # 4. A Ordem de Repetição: "Ande linha por linha (iterrows) nesta grelha"
+        for index, linha in df.iterrows():
+            
+            # Extraímos o dado de cada coluna do Excel. O 'str()' e 'float()' 
+            # garantem que o Python entenda o tipo de dado correto.
+            novo_custo = CustoCD(
+                cd_id=cd_id,
+                mes_referencia=str(linha['Mês']).strip(),
+                descricao_item=str(linha['Descrição']).strip(),
+                valor=float(linha['Valor']),
+                tipo_custo=str(linha['Tipo']).strip(),
+                categoria=str(linha['Categoria']).strip()
+            )
+            
+            # Guardamos na fila de espera do banco de dados
+            db.session.add(novo_custo)
+            custos_importados += 1
+            
+        # 5. O Martelo Final: Grava as 100, 500 ou 1000 linhas de uma vez só!
+        db.session.commit()
+        
+        flash(f"Sucesso! {custos_importados} faturas foram importadas para o sistema.", "success")
+        
+    except KeyError as e:
+        # Rede de Segurança: Se a pessoa enviar um Excel com o nome da coluna errado.
+        flash(f"Erro na estrutura do Excel. Coluna não encontrada: {e}", "danger")
+    except Exception as e:
+        flash(f"Ocorreu um erro ao ler o ficheiro: {e}", "danger")
+        
+    return redirect(url_for('gerenciar_custos', cd_id=cd_id))
 
 # Rota para deletar um custo lançado errado
 @app.route('/excluir_custo/<int:custo_id>', methods=['POST'])
@@ -593,53 +650,51 @@ def excluir_movimentacao(mov_id):
     return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
 
 @app.route('/registrar', methods=['GET', 'POST'])
+@login_required # <-- 1. Proíbe qualquer pessoa anônima de acessar
 def registrar_conta():
-    # Se o cara já está logado, não tem porquê criar conta
-    if current_user.is_authenticated:
+    # 2. A Catraca do Dono: Só o Super Admin (você/seu sócio) passa
+    if current_user.email != 'admin@checkuplog.com':
+        flash("ACESSO NEGADO: Apenas os donos do sistema podem cadastrar novos clientes.", "danger")
         return redirect(url_for('painel_gerencial'))
 
     if request.method == 'POST':
-        # 1. O computador lê o que foi digitado na tela
         razao_social = request.form.get('razao_social')
         cnpj = request.form.get('cnpj')
         email = request.form.get('email')
         senha = request.form.get('senha')
+        nome_responsavel = request.form.get('nome_responsavel') # <-- O PYTHON LÊ O NOME AQUI
 
-        # 2. A Trava de Segurança: Esse e-mail já existe?
+        # --- NOVA TRAVA: Verifica se o CNPJ foi preenchido e se já existe ---
+        if cnpj:
+            empresa_existente = Empresa.query.filter_by(cnpj=cnpj).first()
+            if empresa_existente:
+                flash(f"O CNPJ {cnpj} já está cadastrado em outra conta.", "warning")
+                return redirect(url_for('registrar_conta'))
+
         from auth import UsuarioModel
         if UsuarioModel.query.filter_by(email=email).first():
-            flash("Este e-mail já está cadastrado. Faça login.", "danger")
+            flash("Este e-mail já está cadastrado no sistema.", "danger")
             return redirect(url_for('registrar_conta'))
 
-        # 3. Criando a Empresa (A Casa)
         nova_empresa = Empresa(razao_social=razao_social, cnpj=cnpj, plano_assinatura='Básico')
         db.session.add(nova_empresa)
-        
-        # A MÁGICA: O comando 'flush' não salva definitivamente, ele apenas 
-        # "simula" o salvamento para que o banco de dados gere o ID da empresa.
         db.session.flush() 
 
-        # 4. Criando o Usuário (O Dono) e amarrando o crachá
         from werkzeug.security import generate_password_hash
-        from flask_login import login_user
-        
         novo_usuario = UsuarioModel(
-            nome="Administrador", 
+            nome=nome_responsavel, 
             email=email,
             senha_hash=generate_password_hash(senha),
-            empresa_id=nova_empresa.id  # Pegamos o ID gerado pelo flush!
+            empresa_id=nova_empresa.id
         )
         db.session.add(novo_usuario)
         
-        # Agora sim, bate o martelo e salva a Empresa e o Usuário juntos no cofre
         db.session.commit() 
 
-        # 5. Já faz o login automático para ele não ter que digitar a senha de novo
-        login_user(novo_usuario)
-        flash("Conta criada com sucesso! Bem-vindo ao CheckUpLog SaaS.", "success")
+        # 3. Mudança: Tiramos o login_user() para você não ser deslogado ao criar a conta
+        flash(f"Sucesso! A conta da empresa {razao_social} foi criada e liberada.", "success")
         return redirect(url_for('painel_gerencial'))
 
-    # Se ele apenas acessou o link, mostra o formulário HTML
     return render_template('registrar.html')
 
 @app.route('/migrar_saas')
