@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_login import LoginManager, login_required, current_user
@@ -649,6 +649,39 @@ def excluir_movimentacao(mov_id):
     flash("Apontamento excluído com sucesso!", "success")
     return redirect(url_for('movimentacao_operacional', cd_id=cd_id_retorno))
 
+# --- FASE 4.5: PAINEL DO SUPER ADMINISTRADOR (CONTROLE DE ASSINATURAS) ---
+
+@app.route('/painel_matriz')
+@login_required
+def painel_matriz():
+    # 1. A Trava de Segurança Mestra
+    if current_user.email != 'admin@checkuplog.com':
+        flash("ACESSO NEGADO: Área restrita à diretoria da Logcare Matriz.", "danger")
+        return redirect(url_for('painel_gerencial'))
+
+    # 2. A Ordem: "Busque todas as empresas, sem exceção"
+    todas_empresas = Empresa.query.all()
+    
+    return render_template('admin.html', empresas=todas_empresas)
+
+@app.route('/mudar_plano/<int:empresa_id>', methods=['POST'])
+@login_required
+def mudar_plano(empresa_id):
+    # 1. Checagem dupla de segurança (ninguém injeta dados por fora)
+    if current_user.email != 'admin@checkuplog.com':
+        return redirect(url_for('painel_gerencial'))
+
+    # 2. Pega a empresa exata que você clicou e o plano novo que escolheu
+    empresa = Empresa.query.get_or_404(empresa_id)
+    novo_plano = request.form.get('novo_plano')
+
+    # 3. Troca o "crachá" dela e bate o martelo
+    empresa.plano_assinatura = novo_plano
+    db.session.commit()
+
+    flash(f"Sucesso! O plano da empresa {empresa.razao_social} foi atualizado para {novo_plano}.", "success")
+    return redirect(url_for('painel_matriz'))
+
 @app.route('/registrar', methods=['GET', 'POST'])
 @login_required # <-- 1. Proíbe qualquer pessoa anônima de acessar
 def registrar_conta():
@@ -720,6 +753,44 @@ def migrar_saas():
         return f"SUCESSO: Banco de produção migrado para SaaS! Dados antigos alocados na Empresa ID {empresa_padrao_id}."
     except Exception as e:
         return f"Ocorreu um erro ou o banco já foi migrado: {e}"
+    
+# --- FASE 4: API PARA O DASHBOARD DINÂMICO ---
+@app.route('/api/resumo_financeiro')
+@login_required
+def api_resumo_financeiro():
+    # 1. Busca os CDs da empresa logada
+    todos_cds = CentroDistribuicao.query.filter_by(empresa_id=current_user.empresa_id).all()
+    meus_cd_ids = [cd.id for cd in todos_cds]
+    
+    # 2. Busca os dados para cálculo
+    todas_operacoes = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
+    
+    faturamento_global = 0
+    total_variavel_global = 0
+    
+    for op in todas_operacoes:
+        faturamento_global += op.faturamento
+        total_variavel_global += op.custo_variavel
+
+    custo_rede_total = 0
+    for cd in todos_cds:
+        custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
+        for conta in custos_fixos_cd:
+            custo_rede_total += conta.valor
+            
+    # 3. Matemática Financeira
+    lucro_global = faturamento_global - custo_rede_total - total_variavel_global
+    margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
+    margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
+    ponto_equilibrio = custo_rede_total / margem_contribuicao if margem_contribuicao > 0 else 0
+
+    # 4. A ENTREGA (O Garçom devolve a bandeja com os dados crus)
+    return jsonify({
+        "faturamento_total": faturamento_global,
+        "custo_operacional": custo_rede_total + total_variavel_global,
+        "margem_media": margem_global,
+        "ponto_equilibrio": ponto_equilibrio
+    })
 
 
 if __name__ == '__main__':

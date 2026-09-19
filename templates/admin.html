@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel da Matriz - CheckUpLog</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-0">Painel da Matriz</h2>
+                <small class="text-muted">Gestão de Assinaturas e Clientes SaaS</small>
+            </div>
+            <a href="{{ url_for('painel_gerencial') }}" class="btn btn-outline-secondary btn-sm">Voltar ao Dashboard</a>
+        </div>
+
+        <!-- CAIXA DE MENSAGENS -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} shadow-sm py-2">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-empresa text-white fw-bold">
+                Empresas Cadastradas (Multi-Tenancy)
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Razão Social</th>
+                            <th>CNPJ</th>
+                            <th>Plano Atual</th>
+                            <th class="pe-4 text-end">Ação Comercial</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for empresa in empresas %}
+                        <tr>
+                            <td class="ps-4 text-muted fw-bold">#{{ empresa.id }}</td>
+                            <td class="fw-bold text-dark">{{ empresa.razao_social }}</td>
+                            <td>{{ empresa.cnpj if empresa.cnpj else 'Não informado' }}</td>
+                            <td>
+                                <!-- Etiqueta colorida dependendo do plano -->
+                                <span class="badge {% if empresa.plano_assinatura == 'Premium' %}bg-success{% elif empresa.plano_assinatura == 'Standard' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ empresa.plano_assinatura }}
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <!-- O Formulário que altera o plano -->
+                                <form action="{{ url_for('mudar_plano', empresa_id=empresa.id) }}" method="POST" class="d-flex justify-content-end gap-2">
+                                    <select name="novo_plano" class="form-select form-select-sm" style="width: 120px;">
+                                        <option value="Básico" {% if empresa.plano_assinatura == 'Básico' %}selected{% endif %}>Básico</option>
+                                        <option value="Standard" {% if empresa.plano_assinatura == 'Standard' %}selected{% endif %}>Standard</option>
+                                        <option value="Premium" {% if empresa.plano_assinatura == 'Premium' %}selected{% endif %}>Premium</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-empresa btn-sm fw-bold">Aplicar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

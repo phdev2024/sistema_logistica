@@ -44,6 +44,12 @@
         <div class="d-flex gap-2 align-items-center">
           <!-- A PERGUNTA AO CÓDIGO: "O e-mail logado é o do dono?" -->
           {% if current_user.email == 'admin@checkuplog.com' %}
+          
+          <!-- NOVO BOTÃO DA MATRIZ -->
+          <a href="{{ url_for('painel_matriz') }}" class="btn btn-empresa btn-sm fw-bold text-white">
+            ⚙️ Painel da Matriz
+          </a>
+
           <a
             href="{{ url_for('registrar_conta') }}"
             class="btn btn-warning btn-sm fw-bold text-dark"
@@ -77,7 +83,9 @@
                 style="font-size: 0.75rem; letter-spacing: 1px"
                 >Faturamento Total</span
               >
-              <h4 class="mt-1 mb-0 fw-bold">R$ {{ faturamento | moeda_br }}</h4>
+              <h4 id="dash-faturamento" class="mt-1 mb-0 fw-bold">
+                R$ {{ faturamento | moeda_br }}
+              </h4>
             </div>
           </div>
         </div>
@@ -89,7 +97,9 @@
                 style="font-size: 0.75rem; letter-spacing: 1px"
                 >Custo Operacional Total</span
               >
-              <h4 class="mt-1 mb-0 fw-bold">R$ {{ custo_ops | moeda_br }}</h4>
+              <h4 id="dash-custo" class="mt-1 mb-0 fw-bold">
+                R$ {{ custo_ops | moeda_br }}
+              </h4>
             </div>
           </div>
         </div>
@@ -101,7 +111,9 @@
                 style="font-size: 0.75rem; letter-spacing: 1px"
                 >Margem Média da Rede</span
               >
-              <h4 class="mt-1 mb-0 fw-bold">{{ "%.1f"|format(margem) }}%</h4>
+              <h4 id="dash-margem" class="mt-1 mb-0 fw-bold">
+                {{ "%.1f"|format(margem) }}%
+              </h4>
             </div>
           </div>
         </div>
@@ -113,7 +125,7 @@
                 style="font-size: 0.75rem; letter-spacing: 1px"
                 >Meta de Equilíbrio (Break-even)</span
               >
-              <h4 class="mt-1 mb-0 fw-bold">
+              <h4 id="dash-breakeven" class="mt-1 mb-0 fw-bold">
                 R$ {{ ponto_equilibrio | moeda_br }}
               </h4>
             </div>
@@ -391,5 +403,36 @@
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- O MENSAGEIRO SILENCIOSO (API FETCH) -->
+    <script>
+      // Função que formata o número puro (1500.5) para o padrão brasileiro (R$ 1.500,50)
+      function formatarMoeda(valor) {
+          return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      }
+
+      // Função principal que vai na cozinha buscar os dados
+      function atualizarDashboard() {
+          // O comando 'fetch' bate na porta da nossa API
+          fetch('/api/resumo_financeiro')
+              .then(resposta => resposta.json()) // Transforma a resposta em JSON legível
+              .then(dados => {
+                  // Procura as etiquetas na tela e injeta os novos números formatados
+                  document.getElementById('dash-faturamento').innerText = formatarMoeda(dados.faturamento_total);
+                  document.getElementById('dash-custo').innerText = formatarMoeda(dados.custo_operacional);
+                  document.getElementById('dash-margem').innerText = dados.margem_media.toFixed(1).replace('.', ',') + '%';
+                  document.getElementById('dash-breakeven').innerText = formatarMoeda(dados.ponto_equilibrio);
+              })
+              .catch(erro => console.error("Erro ao buscar dados da API:", erro));
+      }
+
+      // A Ordem: "Repita essa função a cada 5000 milissegundos (5 segundos)"
+      setInterval(atualizarDashboard, 5000);
+    </script>
+  </body>
+</html>
+ 
   </body>
 </html>
