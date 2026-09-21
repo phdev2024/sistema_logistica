@@ -1,10 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_login import LoginManager, login_required, current_user
 from auth import auth_bp, inicializar_auth
 from functools import wraps
 import pandas as pd
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_logistica_2026'
@@ -30,6 +35,18 @@ if database_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 db = SQLAlchemy(app)
+
+# --- CONFIGURAÇÕES DO CARTEIRO (FLASK-MAIL) ---
+# Em produção, esses dados ficam escondidos em Variáveis de Ambiente no Render!
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USUARIO', 'seu_email@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_SENHA', 'sua_senha_de_app')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USUARIO', 'seu_email@gmail.com')
+
+# Inicializa o carteiro
+mail = Mail(app)
 
 # --- O PORTEIRO VIP (Controle de Planos SaaS) ---
 def requer_plano(plano_exigido):
