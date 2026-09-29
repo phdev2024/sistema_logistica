@@ -47,7 +47,8 @@
                             <label class="form-label fw-semibold text-secondary">Tipo</label>
                             <select name="tipo" class="form-select" required>
                                 <option value="Fixo" {% if custo.tipo_custo == 'Fixo' %}selected{% endif %}>Fixo</option>
-                                <option value="Variável" {% if custo.tipo_custo == 'Variável' %}selected{% endif %}>Variável</option>
+                                <!-- Agora ele aceita com acento e sem acento! -->
+                                <option value="Variável" {% if custo.tipo_custo in ['Variável', 'Variavel'] %}selected{% endif %}>Variável</option>
                             </select>
                         </div>
                         <div class="col-md-2 mb-3">

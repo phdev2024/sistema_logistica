@@ -241,10 +241,16 @@ def gerenciar_custos(cd_id):
     custos_cadastrados = CustoCD.query.filter_by(cd_id=cd_id).all()
     
     # --- MATEMÁTICA DO CHECKUP ---
+    # --- MATEMÁTICA DO CHECKUP ---
     total_fixo = 0
+    total_variavel = 0 # 1. CRIAMOS O BALDE PARA AS VARIÁVEIS
+    
     for despesa in custos_cadastrados:
         if despesa.tipo_custo == 'Fixo':
             total_fixo += despesa.valor
+        # 2. SE FOR VARIÁVEL (COM OU SEM ACENTO), SOMA NO OUTRO BALDE
+        elif despesa.tipo_custo in ['Variável', 'Variavel']:
+            total_variavel += despesa.valor
             
     if cd_atual.capacidade_paletes > 0:
         divisor = cd_atual.capacidade_paletes
@@ -255,12 +261,13 @@ def gerenciar_custos(cd_id):
         
     custo_unitario = total_fixo / divisor if divisor > 0 else 0
     
-    # ÚNICO RETORNO: O computador finaliza o trabalho enviando TUDO para a tela
+    # 3. ÚNICO RETORNO: Agora enviamos o total_variavel para a tela também!
     return render_template(
         'gerenciar_custos.html', 
         cd=cd_atual, 
         custos=custos_cadastrados,
         total_fixo=total_fixo,
+        total_variavel=total_variavel, # <-- ESTA LINHA É NOVA
         divisor=divisor,
         nome_divisor=nome_divisor,
         custo_unitario=custo_unitario
@@ -269,56 +276,70 @@ def gerenciar_custos(cd_id):
 @app.route('/importar_custos/<int:cd_id>', methods=['POST'])
 @login_required
 def importar_custos_excel(cd_id):
-    # 1. A Pergunta: "O utilizador enviou mesmo um ficheiro com o nome 'arquivo_excel'?"
     if 'arquivo_excel' not in request.files:
         flash("Nenhum ficheiro foi enviado.", "danger")
         return redirect(url_for('gerenciar_custos', cd_id=cd_id))
         
     ficheiro = request.files['arquivo_excel']
     
-    # 2. A Pergunta: "O ficheiro está vazio?"
     if ficheiro.filename == '':
         flash("Selecione um ficheiro válido.", "warning")
         return redirect(url_for('gerenciar_custos', cd_id=cd_id))
 
     try:
-        # 3. A Ordem ao Pandas: "Leia o Excel e transforme numa grelha de dados (DataFrame)"
         df = pd.read_excel(ficheiro)
-
-        # --- A FAXINA (Data Cleaning) ---
-        # "Pegue o nome de todas as colunas (df.columns) e aplique a função de cortar espaços (str.strip)"
         df.columns = df.columns.str.strip()
         
         custos_importados = 0
         
-        # 4. A Ordem de Repetição: "Ande linha por linha (iterrows) nesta grelha"
+        # O Inspetor vai olhar linha por linha
         for index, linha in df.iterrows():
+            # A linha real no Excel é o índice do Pandas + 2 (por causa do cabeçalho)
+            linha_excel = index + 2 
             
-            # Extraímos o dado de cada coluna do Excel. O 'str()' e 'float()' 
-            # garantem que o Python entenda o tipo de dado correto.
-            novo_custo = CustoCD(
-                cd_id=cd_id,
-                mes_referencia=str(linha['Mês']).strip(),
-                descricao_item=str(linha['Descrição']).strip(),
-                valor=float(linha['Valor']),
-                tipo_custo=str(linha['Tipo']).strip(),
-                categoria=str(linha['Categoria']).strip()
-            )
+            try:
+                # 1. VALIDAÇÃO DO MÊS (Tem que ter 7 caracteres, ex: 2026-09)
+                mes_lido = str(linha['Mês']).strip()
+                if len(mes_lido) != 7 or '-' not in mes_lido:
+                    flash(f"Erro na linha {linha_excel}: A coluna 'Mês' tem o valor '{mes_lido}'. O formato correto é AAAA-MM (ex: 2026-09).", "danger")
+                    return redirect(url_for('gerenciar_custos', cd_id=cd_id))
+
+                # 2. VALIDAÇÃO DO VALOR (Tem que ser número)
+                try:
+                    valor_lido = float(linha['Valor'])
+                except ValueError:
+                    flash(f"Erro na linha {linha_excel}: A coluna 'Valor' deve conter apenas números. Valor lido: '{linha['Valor']}'", "danger")
+                    return redirect(url_for('gerenciar_custos', cd_id=cd_id))
+                
+                # 3. O FUNIL DA CATEGORIA (Se vier bagunçado, cai em 'Outros')
+                categoria_lida = str(linha['Categoria']).strip()
+                if categoria_lida not in ['Armazenagem', 'Mão de Obra', 'Movimentação']:
+                    categoria_lida = 'Outros'
+                
+                # 4. CRIAÇÃO DO CUSTO
+                novo_custo = CustoCD(
+                    cd_id=cd_id,
+                    mes_referencia=mes_lido,
+                    descricao_item=str(linha['Descrição']).strip(),
+                    valor=valor_lido,
+                    tipo_custo=str(linha['Tipo']).strip(),
+                    categoria=categoria_lida
+                )
+                
+                db.session.add(novo_custo)
+                custos_importados += 1
+                
+            except KeyError as e:
+                # Se o utilizador apagar ou renomear uma coluna
+                flash(f"Atenção! A coluna {e} não foi encontrada no Excel. Verifique o cabeçalho.", "danger")
+                return redirect(url_for('gerenciar_custos', cd_id=cd_id))
             
-            # Guardamos na fila de espera do banco de dados
-            db.session.add(novo_custo)
-            custos_importados += 1
-            
-        # 5. O Martelo Final: Grava as 100, 500 ou 1000 linhas de uma vez só!
         db.session.commit()
+        flash(f"Sucesso! {custos_importados} faturas foram importadas perfeitamente.", "success")
         
-        flash(f"Sucesso! {custos_importados} faturas foram importadas para o sistema.", "success")
-        
-    except KeyError as e:
-        # Rede de Segurança: Se a pessoa enviar um Excel com o nome da coluna errado.
-        flash(f"Erro na estrutura do Excel. Coluna não encontrada: {e}", "danger")
     except Exception as e:
-        flash(f"Ocorreu um erro ao ler o ficheiro: {e}", "danger")
+        flash(f"Ocorreu um erro ao ler o ficheiro: O formato do Excel pode estar corrompido.", "danger")
+        print(f"Erro técnico: {e}")
         
     return redirect(url_for('gerenciar_custos', cd_id=cd_id))
 
@@ -364,11 +385,23 @@ def editar_custo(custo_id):
 def rentabilidade_clientes(cd_id):
     cd_atual = CentroDistribuicao.query.get_or_404(cd_id)
     
-    # --- 1. O SISTEMA RECALCULA O CUSTO DA POSIÇÃO AUTOMATICAMENTE ---
+   # --- 1. O SISTEMA RECALCULA O CUSTO DA POSIÇÃO AUTOMATICAMENTE ---
     custos_cd = CustoCD.query.filter_by(cd_id=cd_id).all()
-    total_fixo = sum(c.valor for c in custos_cd if c.tipo_custo == 'Fixo')
+    
+    total_fixo = 0
+    total_variavel_cd = 0
+    
+    # Criamos os dois baldes
+    for c in custos_cd:
+        if c.tipo_custo == 'Fixo':
+            total_fixo += c.valor
+        elif c.tipo_custo in ['Variável', 'Variavel']:
+            total_variavel_cd += c.valor
+            
     divisor = cd_atual.capacidade_paletes if cd_atual.capacidade_paletes > 0 else cd_atual.metragem
-    custo_posicao = total_fixo / divisor if divisor > 0 else 0
+    
+    # O Custo da Posição agora rateia Fixo + Variável, garantindo que o CD não tenha prejuízo!
+    custo_posicao = (total_fixo + total_variavel_cd) / divisor if divisor > 0 else 0
 
    # --- 2. GRAVAÇÃO DO NOVO CLIENTE (Se o usuário enviou o formulário) ---
     if request.method == 'POST':
@@ -423,16 +456,32 @@ def rentabilidade_clientes(cd_id):
 @app.route('/')
 @login_required
 def painel_gerencial():
-    # 1. Busca apenas os CDs que pertencem à empresa do usuário logado
-    todos_cds = CentroDistribuicao.query.filter_by(empresa_id=current_user.empresa_id).all()
+    # --- 1. A MÁQUINA DO TEMPO (Filtro) ---
+    # Captura o mês escolhido pelo utilizador na tela
+    mes_filtro = request.args.get('mes')
     
-    # 2. Descobre os IDs desses CDs (Ex: [1, 2, 5])
+    # Busca todos os meses únicos que existem nos custos para preencher a caixa de seleção
+    meses_banco = db.session.query(CustoCD.mes_referencia).distinct().order_by(CustoCD.mes_referencia.desc()).all()
+    lista_meses = [m[0] for m in meses_banco if m[0]] # Limpa a lista
+    
+    # Se o utilizador acabou de entrar e não escolheu nada, forçamos o mês mais recente (se existir)
+    if mes_filtro is None and lista_meses:
+        mes_filtro = lista_meses[0]
+
+    # --- 2. BUSCA DE DADOS (Agora com Filtro!) ---
+    todos_cds = CentroDistribuicao.query.filter_by(empresa_id=current_user.empresa_id).all()
     meus_cd_ids = [cd.id for cd in todos_cds]
     
-    # 3. Busca apenas as Operações (Clientes) que moram dentro dos MEUS CDs
-    todas_operacoes = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
+    # Busca as operações APENAS do mês selecionado
+    if mes_filtro:
+        todas_operacoes = OperacaoCliente.query.filter(
+            OperacaoCliente.cd_id.in_(meus_cd_ids),
+            OperacaoCliente.mes_referencia == mes_filtro
+        ).all()
+    else:
+        todas_operacoes = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
     
-    # 1. PREPARAÇÃO
+    # Variáveis de preparação...
     espaco_vendido_por_cd = {}
     faturamento_por_cd = {}
     faturamento_global = 0
@@ -440,7 +489,6 @@ def painel_gerencial():
     total_variavel_global = 0
     clientes_rentaveis = clientes_atencao = clientes_deficitarios = 0
 
-    # 2. COLETA DE DADOS (Faturamento e Ocupação)
     for op in todas_operacoes:
         espaco_vendido_por_cd[op.cd_id] = espaco_vendido_por_cd.get(op.cd_id, 0) + op.paletes_ocupados
         faturamento_por_cd[op.cd_id] = faturamento_por_cd.get(op.cd_id, 0) + op.faturamento
@@ -451,39 +499,51 @@ def painel_gerencial():
     custo_ociosidade_global = receita_potencial_global = posicoes_vazias_rede = 0
     resumo_bases = [] 
     memoria_custo_cd = {}
-    
-    # --- NOVA LÓGICA DA MINI-DRE: As 4 Gavetas ---
     gavetas_dre = {'Armazenagem': 0, 'Mão de Obra': 0, 'Movimentação': 0, 'Outros': 0}
 
-    # 3. LOOP POR BASE (Inteligência Comercial e Custos)
+    # --- 3. LOOP POR BASE ---
     for cd in todos_cds:
-        custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
+        # Busca os custos APENAS do mês selecionado
+        if mes_filtro:
+            todos_custos_cd = CustoCD.query.filter_by(cd_id=cd.id, mes_referencia=mes_filtro).all()
+        else:
+            todos_custos_cd = CustoCD.query.filter_by(cd_id=cd.id).all()
+            
         soma_fixo = 0
+        soma_variavel = 0
         
-        for conta in custos_fixos_cd:
-            soma_fixo += conta.valor
-            # Guardando o dinheiro na gaveta correta para o gráfico
+        for conta in todos_custos_cd:
+            if conta.tipo_custo == 'Fixo':
+                soma_fixo += conta.valor
+            elif conta.tipo_custo in ['Variável', 'Variavel']:
+                soma_variavel += conta.valor
+            
             cat = conta.categoria if conta.categoria else 'Outros'
+            if cat not in ['Armazenagem', 'Mão de Obra', 'Movimentação']:
+                cat = 'Outros'
             gavetas_dre[cat] = gavetas_dre.get(cat, 0) + conta.valor
+        
+        custo_total_cd = soma_fixo + soma_variavel
         
         if cd.capacidade_paletes > 0:
             divisor = cd.capacidade_paletes
             unidade = "Paletes"
             capacidade_paletes_rede += divisor
-            custo_rede_paletes += soma_fixo
+            custo_rede_paletes += custo_total_cd
         else:
             divisor = cd.metragem
             unidade = "m²"
             capacidade_m2_rede += divisor
-            custo_rede_m2 += soma_fixo
+            custo_rede_m2 += custo_total_cd
             
-        custo_unitario = soma_fixo / divisor if divisor > 0 else 0
-        memoria_custo_cd[cd.id] = custo_unitario
+        custo_unitario_total = custo_total_cd / divisor if divisor > 0 else 0
+        memoria_custo_cd[cd.id] = custo_unitario_total
+        custo_unitario_fixo = soma_fixo / divisor if divisor > 0 else 0
         
         espaco_vendido = espaco_vendido_por_cd.get(cd.id, 0)
         espaco_vazio = divisor - espaco_vendido if divisor > espaco_vendido else 0
             
-        dinheiro_queimado = espaco_vazio * custo_unitario
+        dinheiro_queimado = espaco_vazio * custo_unitario_fixo
         custo_ociosidade_global += dinheiro_queimado
         
         ticket_medio = faturamento_por_cd.get(cd.id, 0) / espaco_vendido if espaco_vendido > 0 else 0
@@ -493,23 +553,19 @@ def painel_gerencial():
             posicoes_vazias_rede += espaco_vazio
         
         resumo_bases.append({
-            'nome': cd.nome, 'custo_total': soma_fixo, 'capacidade': divisor,
-            'unidade': unidade, 'custo_unitario': custo_unitario, 'espaco_vazio': espaco_vazio
+            'nome': cd.nome, 'custo_total': custo_total_cd, 'capacidade': divisor,
+            'unidade': unidade, 'custo_unitario': custo_unitario_total, 'espaco_vazio': espaco_vazio
         })
         
     media_palete = custo_rede_paletes / capacidade_paletes_rede if capacidade_paletes_rede > 0 else 0
     media_m2 = custo_rede_m2 / capacidade_m2_rede if capacidade_m2_rede > 0 else 0
 
-    # 4. FECHAMENTO DA MINI-DRE (Calculando as Porcentagens)
-    total_custo_rede = custo_rede_paletes + custo_rede_m2
+    total_geral_dre = custo_rede_paletes + custo_rede_m2
     porcentagens_dre = {}
-    if total_custo_rede > 0:
+    if total_geral_dre > 0:
         for cat, valor in gavetas_dre.items():
-            porcentagens_dre[cat] = (valor / total_custo_rede) * 100
-    else:
-        porcentagens_dre = {'Armazenagem': 0, 'Mão de Obra': 0, 'Movimentação': 0, 'Outros': 0}
+            porcentagens_dre[cat] = (valor / total_geral_dre) * 100
 
-    # 5. RENTABILIDADE DOS CLIENTES
     for op in todas_operacoes:
         custo_total_cliente = (op.paletes_ocupados * memoria_custo_cd.get(op.cd_id, 0)) + op.custo_variavel
         custo_operacional_global += custo_total_cliente
@@ -519,21 +575,31 @@ def painel_gerencial():
         elif margem > 0: clientes_atencao += 1
         else: clientes_deficitarios += 1
             
-    lucro_global = faturamento_global - custo_operacional_global
+    lucro_global = faturamento_global - total_geral_dre
     margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
     margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
-    ponto_equilibrio = total_custo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
+    
+    # Busca os custos fixos APENAS do mês selecionado
+    if mes_filtro:
+        todos_custos_fixos = CustoCD.query.filter(CustoCD.cd_id.in_(meus_cd_ids), CustoCD.tipo_custo == 'Fixo', CustoCD.mes_referencia == mes_filtro).all()
+    else:
+        todos_custos_fixos = CustoCD.query.filter(CustoCD.cd_id.in_(meus_cd_ids), CustoCD.tipo_custo == 'Fixo').all()
+        
+    custo_fixo_rede = sum(c.valor for c in todos_custos_fixos)
+    ponto_equilibrio = custo_fixo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
     margem_potencial = receita_potencial_global - custo_ociosidade_global
 
+    # ENTREGANDO AS VARIÁVEIS NOVAS PARA A TELA
     return render_template(
         'dashboard.html',
         media_palete=media_palete, media_m2=media_m2, bases=resumo_bases,
-        faturamento=faturamento_global, custo_ops=custo_operacional_global,
+        faturamento=faturamento_global, custo_ops=total_geral_dre, 
         margem=margem_global, rentaveis=clientes_rentaveis, atencao=clientes_atencao, deficitarios=clientes_deficitarios,
         custo_ociosidade=custo_ociosidade_global, ponto_equilibrio=ponto_equilibrio,
         receita_potencial=receita_potencial_global, margem_potencial=margem_potencial, posicoes_vazias=posicoes_vazias_rede,
-        # Enviando os cálculos da DRE para o HTML:
-        dre_valores=gavetas_dre, dre_pct=porcentagens_dre
+        dre_valores=gavetas_dre, dre_pct=porcentagens_dre,
+        lista_meses=lista_meses, # Lista para montar o dropdown
+        mes_selecionado=mes_filtro # Sabe qual mês deixar pintado de azul
     )
 
 # Rota para deletar um cliente lançado errado
@@ -783,28 +849,35 @@ def api_resumo_financeiro():
     todas_operacoes = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
     
     faturamento_global = 0
-    total_variavel_global = 0
+    total_variavel_clientes = 0
     
     for op in todas_operacoes:
         faturamento_global += op.faturamento
-        total_variavel_global += op.custo_variavel
+        total_variavel_clientes += op.custo_variavel
 
     custo_rede_total = 0
     for cd in todos_cds:
-        custos_fixos_cd = CustoCD.query.filter_by(cd_id=cd.id, tipo_custo='Fixo').all()
-        for conta in custos_fixos_cd:
+        # CORREÇÃO: Tiramos o filtro de 'Fixo' para a API somar tudo (Fixo + Variável) do CD
+        todos_custos_cd = CustoCD.query.filter_by(cd_id=cd.id).all()
+        for conta in todos_custos_cd:
             custo_rede_total += conta.valor
             
     # 3. Matemática Financeira
-    lucro_global = faturamento_global - custo_rede_total - total_variavel_global
+    custo_operacional_real = custo_rede_total + total_variavel_clientes
+    lucro_global = faturamento_global - custo_operacional_real
     margem_global = (lucro_global / faturamento_global * 100) if faturamento_global > 0 else 0
-    margem_contribuicao = (faturamento_global - total_variavel_global) / faturamento_global if faturamento_global > 0 else 0
-    ponto_equilibrio = custo_rede_total / margem_contribuicao if margem_contribuicao > 0 else 0
+    
+    # O Break-even deve sempre usar apenas o CUSTO FIXO da rede
+    todos_custos_fixos = CustoCD.query.filter(CustoCD.cd_id.in_(meus_cd_ids), CustoCD.tipo_custo == 'Fixo').all()
+    custo_fixo_rede = sum(c.valor for c in todos_custos_fixos)
+    
+    margem_contribuicao = (faturamento_global - total_variavel_clientes) / faturamento_global if faturamento_global > 0 else 0
+    ponto_equilibrio = custo_fixo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
 
-    # 4. A ENTREGA (O Garçom devolve a bandeja com os dados crus)
+    # 4. A ENTREGA (O Garçom devolve a bandeja com os dados crus corretos)
     return jsonify({
         "faturamento_total": faturamento_global,
-        "custo_operacional": custo_rede_total + total_variavel_global,
+        "custo_operacional": custo_operacional_real,
         "margem_media": margem_global,
         "ponto_equilibrio": ponto_equilibrio
     })

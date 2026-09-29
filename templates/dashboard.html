@@ -73,6 +73,28 @@
         </div>
       </div>
 
+      <!-- ========================================== -->
+      <!-- A NOVA LINHA EXCLUSIVA PARA O FILTRO AQUI  -->
+      <!-- ========================================== -->
+      <div class="row mb-4 justify-content-end">
+        <div class="col-md-3">
+            <form method="GET" action="{{ url_for('painel_gerencial') }}">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-empresa text-empresa">
+                        <span class="fw-bold">Período:</span>
+                    </span>
+                    <select name="mes" class="form-select border-empresa fw-bold text-dark" onchange="this.form.submit()">
+                      <option value="" {% if mes_selecionado == "" %}selected{% endif %}>Acumulado Geral</option>
+                        {% for m in lista_meses %}
+                            <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- ========================================== -->
+
       <!-- 1. BLOCO FINANCEIRO (Visão Global) -->
       <div class="row text-center mb-4">
         <div class="col-md-3">
@@ -367,7 +389,7 @@
                 <th>Centro de Distribuição</th>
                 <th>Capacidade Total</th>
                 <th>Espaço Vazio</th>
-                <th>Custo Fixo Total</th>
+                <th>Custo Total (Mês)</th>
                 <th>Custo Unitário</th>
                 <th>Status (Comparado à sua Média)</th>
               </tr>
@@ -404,35 +426,9 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
  
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- O MENSAGEIRO SILENCIOSO (API FETCH) -->
-    <script>
-      // Função que formata o número puro (1500.5) para o padrão brasileiro (R$ 1.500,50)
-      function formatarMoeda(valor) {
-          return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      }
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
 
-      // Função principal que vai na cozinha buscar os dados
-      function atualizarDashboard() {
-          // O comando 'fetch' bate na porta da nossa API
-          fetch('/api/resumo_financeiro')
-              .then(resposta => resposta.json()) // Transforma a resposta em JSON legível
-              .then(dados => {
-                  // Procura as etiquetas na tela e injeta os novos números formatados
-                  document.getElementById('dash-faturamento').innerText = formatarMoeda(dados.faturamento_total);
-                  document.getElementById('dash-custo').innerText = formatarMoeda(dados.custo_operacional);
-                  document.getElementById('dash-margem').innerText = dados.margem_media.toFixed(1).replace('.', ',') + '%';
-                  document.getElementById('dash-breakeven').innerText = formatarMoeda(dados.ponto_equilibrio);
-              })
-              .catch(erro => console.error("Erro ao buscar dados da API:", erro));
-      }
-
-      // A Ordem: "Repita essa função a cada 5000 milissegundos (5 segundos)"
-      setInterval(atualizarDashboard, 5000);
     </script>
-  </body>
-</html>
  
   </body>
 </html>

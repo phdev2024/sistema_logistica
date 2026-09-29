@@ -59,52 +59,51 @@
       </div>
       {% endfor %} {% endif %} {% endwith %}
 
-      <!-- 1. CARTÕES RESUMO DO CD -->
-      <div class="row text-center mb-4">
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100">
-            <div class="card-body p-3">
-              <span
-                class="text-uppercase text-muted fw-semibold"
-                style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Custo Fixo Total (Mês)</span
-              >
-              <h4 class="mt-1 mb-0 fw-bold text-dark">
-                R$ {{ total_fixo | moeda_br }}
-              </h4>
+      <!-- 1. CARTÕES RESUMO DO CD (4 CARTÕES) -->
+      <div class="row mb-4">
+          
+        <!-- 1. CUSTO FIXO -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 text-center h-100">
+                <div class="card-body">
+                    <p class="text-muted fw-bold mb-1 small text-uppercase">Custo Fixo Total (Mês)</p>
+                    <!-- Usando o seu filtro moeda_br! -->
+                    <h4 class="fw-bold text-dark mb-0">R$ {{ total_fixo | moeda_br }}</h4>
+                </div>
             </div>
-          </div>
         </div>
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100">
-            <div class="card-body p-3">
-              <span
-                class="text-uppercase text-muted fw-semibold"
-                style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Capacidade Instalada</span
-              >
-              <h4 class="mt-1 mb-0 fw-bold text-dark">
-                {{ divisor }}
-                <small class="text-muted fs-6">{{ nome_divisor }}</small>
-              </h4>
+
+        <!-- 2. CUSTO VARIÁVEL (O NOVO CARTÃO) -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 text-center h-100">
+                <div class="card-body">
+                    <p class="text-muted fw-bold mb-1 small text-uppercase">Custo Variável Total</p>
+                    <h4 class="fw-bold text-warning mb-0">R$ {{ total_variavel | moeda_br }}</h4>
+                </div>
             </div>
-          </div>
         </div>
-        <div class="col-md-4">
-          <div class="card shadow-sm h-100 bg-empresa text-white">
-            <div class="card-body p-3">
-              <span
-                class="text-uppercase text-white-50 fw-semibold"
-                style="font-size: 0.72rem; letter-spacing: 0.5px"
-                >Custo Real ({{ nome_divisor }})</span
-              >
-              <h4 class="mt-1 mb-0 fw-bold text-white">
-                R$ {{ custo_unitario | moeda_br }}
-              </h4>
+
+        <!-- 3. CAPACIDADE -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 text-center h-100">
+                <div class="card-body">
+                    <p class="text-muted fw-bold mb-1 small text-uppercase">Capacidade Instalada</p>
+                    <h4 class="fw-bold text-dark mb-0">{{ cd.capacidade_paletes }} <span class="fs-6 fw-normal">Posições</span></h4>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
+
+        <!-- 4. CUSTO REAL (UNITÁRIO) -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 text-center bg-empresa text-white h-100">
+                <div class="card-body">
+                    <p class="fw-bold mb-1 small text-uppercase opacity-75">Custo Base (Posição Palete)</p>
+                    <h4 class="fw-bold mb-0">R$ {{ custo_unitario | moeda_br }}</h4>
+                </div>
+            </div>
+        </div>
+
+      </div>  
 
       <!-- 2. FORMULÁRIO DE LANÇAMENTO -->
       <div class="card shadow-sm mb-4">
