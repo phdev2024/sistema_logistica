@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -881,6 +881,15 @@ def api_resumo_financeiro():
         "margem_media": margem_global,
         "ponto_equilibrio": ponto_equilibrio
     })
+
+@app.route('/baixar_modelo_custos')
+@login_required
+def baixar_modelo_custos():
+    # 1. Apontamos o caminho de onde o arquivo está guardado
+    caminho_arquivo = 'static/modelo_custos.xlsx'
+    
+    # 2. A Ordem: "Pegue o arquivo nesse caminho e envie como um anexo (download)"
+    return send_file(caminho_arquivo, as_attachment=True)
 
 
 if __name__ == '__main__':

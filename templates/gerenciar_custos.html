@@ -188,7 +188,12 @@
                 <div class="col-md-7">
                     <h6 class="fw-bold mb-1 text-empresa">Importação em Massa (Excel)</h6>
                     <small class="text-muted">Faça upload da sua folha de cálculo com as colunas: <strong>Mês, Descrição, Valor, Tipo, Categoria</strong>.</small>
-                </div>
+                    <br>
+                    <!-- O NOVO BOTÃO DE DOWNLOAD AQUI -->
+                    <a href="{{ url_for('baixar_modelo_custos') }}" class="btn btn-sm btn-outline-secondary mt-2">
+                        📥 Baixar Planilha Modelo
+                    </a>
+                  </div>
                 <!-- Coluna do Formulário (ocupa 5 espaços em 12, alinhado à direita) -->
                 <div class="col-md-5">
                     <form action="{{ url_for('importar_custos_excel', cd_id=cd.id) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 justify-content-end">
