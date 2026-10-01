@@ -589,6 +589,32 @@ def painel_gerencial():
     ponto_equilibrio = custo_fixo_rede / margem_contribuicao if margem_contribuicao > 0 else 0
     margem_potencial = receita_potencial_global - custo_ociosidade_global
 
+    # =========================================================
+    # --- 4. PREPARANDO O GRÁFICO DE EVOLUÇÃO (LINHAS) ---
+    # =========================================================
+    # A Ordem: "Pegue em todos os meses que existem e crie gavetas vazias com valor 0"
+    historico_faturamento = {mes: 0 for mes in lista_meses}
+    historico_custos = {mes: 0 for mes in lista_meses}
+    
+    # 1. Soma TODO o faturamento histórico (Ignorando o filtro mensal da tela)
+    todas_op_historico = OperacaoCliente.query.filter(OperacaoCliente.cd_id.in_(meus_cd_ids)).all()
+    for op in todas_op_historico:
+        if op.mes_referencia in historico_faturamento:
+            historico_faturamento[op.mes_referencia] += op.faturamento
+            # O Custo variável do cliente também entra no custo histórico
+            historico_custos[op.mes_referencia] += op.custo_variavel
+            
+    # 2. Soma TODOS os custos (fixos e variáveis) lançados historicamente
+    todos_custos_historico = CustoCD.query.filter(CustoCD.cd_id.in_(meus_cd_ids)).all()
+    for c in todos_custos_historico:
+        if c.mes_referencia in historico_custos:
+            historico_custos[c.mes_referencia] += c.valor
+            
+    # 3. Empacotamento: Invertemos a ordem para o gráfico ir do passado (esquerda) para o presente (direita)
+    meses_grafico = list(reversed(lista_meses))
+    faturamento_grafico = [historico_faturamento[m] for m in meses_grafico]
+    custos_grafico = [historico_custos[m] for m in meses_grafico]
+
     # ENTREGANDO AS VARIÁVEIS NOVAS PARA A TELA
     return render_template(
         'dashboard.html',
@@ -599,7 +625,11 @@ def painel_gerencial():
         receita_potencial=receita_potencial_global, margem_potencial=margem_potencial, posicoes_vazias=posicoes_vazias_rede,
         dre_valores=gavetas_dre, dre_pct=porcentagens_dre,
         lista_meses=lista_meses, # Lista para montar o dropdown
-        mes_selecionado=mes_filtro # Sabe qual mês deixar pintado de azul
+        mes_selecionado=mes_filtro, # Sabe qual mês deixar pintado de azul
+        # ENTREGANDO OS PACOTES PARA O GRÁFICO
+        meses_grafico=meses_grafico,
+        faturamento_grafico=faturamento_grafico,
+        custos_grafico=custos_grafico
     )
 
 # Rota para deletar um cliente lançado errado
