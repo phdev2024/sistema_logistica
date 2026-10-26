@@ -32,16 +32,20 @@
   </head>
   <body>
     <!-- NAVEGAÇÃO SUPERIOR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
+    <nav class="navbar navbar-expand-lg bg-white shadow-sm py-3">
       <div class="container">
-        <a class="navbar-brand fw-bold" href="#" style="letter-spacing: 1px"
+        <!-- Logotipo agora usa a cor verde da empresa -->
+        <a
+          class="navbar-brand fw-bold text-empresa"
+          href="#"
+          style="letter-spacing: 1px"
           >CHECKUPLOG</a
         >
         <div>
-          <!-- O botão que leva para o sistema interno que já construímos -->
+          <!-- Botão de acesso em destaque verde -->
           <a
             href="{{ url_for('auth.login') }}"
-            class="btn btn-outline-light px-4 fw-bold"
+            class="btn bg-empresa text-white px-4 fw-bold"
             >Acessar Sistema</a
           >
         </div>
@@ -98,18 +102,13 @@
 
     <!-- O FLUXOGRAMA DE GESTÃO ESTRATÉGICA -->
     <section class="py-5 bg-light">
-      <div class="container py-4">
-        <div class="text-center mb-5">
-          <h2 class="fw-bold text-dark">Fluxo de Gestão Estratégica de CDs</h2>
-          <p class="text-secondary">
-            Transformando informações operacionais em decisões gerenciais.
-          </p>
-        </div>
-
+      <!-- Caixa limitadora que centraliza o bloco na tela -->
+      <div class="col-lg-10 mx-auto">
         <div class="row g-4">
           <!-- Passo 1 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-clipboard-data fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">1.</span> Levantamento
               </h5>
@@ -121,6 +120,7 @@
           <!-- Passo 2 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-coin fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">2.</span> Mapeamento
               </h5>
@@ -133,6 +133,7 @@
           <!-- Passo 3 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-bar-chart-line fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">3.</span> Análise
               </h5>
@@ -145,6 +146,7 @@
           <!-- Passo 4 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-search fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">4.</span> Identificação
               </h5>
@@ -157,6 +159,7 @@
           <!-- Passo 5 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-bullseye fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">5.</span> Plano de Ação
               </h5>
@@ -169,6 +172,7 @@
           <!-- Passo 6 -->
           <div class="col-md-4">
             <div class="card step-card h-100 p-3">
+              <i class="bi bi-graph-up-arrow fs-2 text-empresa mb-2"></i>
               <h5 class="fw-bold text-dark">
                 <span class="text-empresa me-2">6.</span> Monitoramento
               </h5>
@@ -183,9 +187,9 @@
     </section>
 
     <!-- RODAPÉ -->
-    <footer class="bg-dark text-center py-4 mt-auto">
+    <footer class="bg-white border-top text-center py-4 mt-auto">
       <div class="container">
-        <p class="text-secondary mb-0 small">
+        <p class="text-muted mb-0 small">
           &copy; 2026 CheckUpLog. Todos os direitos reservados.
         </p>
       </div>
