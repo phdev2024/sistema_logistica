@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CheckUpLog - Inteligência de Custos Logísticos</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    />
+    <style>
+      .hero-bg {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+      .text-empresa {
+        color: #20c997;
+      }
+      .bg-empresa {
+        background-color: #20c997;
+      }
+      .step-card {
+        border: none;
+        border-left: 4px solid #20c997;
+        background-color: #ffffff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAVEGAÇÃO SUPERIOR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#" style="letter-spacing: 1px"
+          >CHECKUPLOG</a
+        >
+        <div>
+          <!-- O botão que leva para o sistema interno que já construímos -->
+          <a
+            href="{{ url_for('auth.login') }}"
+            class="btn btn-outline-light px-4 fw-bold"
+            >Acessar Sistema</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <!-- CABEÇALHO COMERCIAL (HERO) -->
+    <header class="hero-bg py-5 text-center">
+      <div class="container py-5">
+        <h1 class="display-4 fw-bold text-dark mb-3">
+          Decisões melhores começam com
+          <span class="text-empresa">custos compreendidos.</span>
+        </h1>
+        <p class="lead text-secondary mb-4">
+          Gestão estratégica de custos logísticos para Centros de Distribuição.
+          Inteligência para Diretores e CFOs.
+        </p>
+        <!-- A chamada para ação sugerida no final da apresentação -->
+        <a
+          href="mailto:contato@checkuplog.com"
+          class="btn btn-success btn-lg px-5 fw-bold shadow-sm"
+          >Agendar uma Demonstração</a
+        >
+      </div>
+    </header>
+
+    <!-- O DESAFIO E A SOLUÇÃO -->
+    <section class="py-5 bg-white">
+      <div class="container py-4">
+        <div class="row align-items-center">
+          <div class="col-md-6 mb-4">
+            <h6 class="text-uppercase text-danger fw-bold">O Desafio</h6>
+            <h3 class="fw-bold text-dark">Enxergar o custo real da operação</h3>
+            <p class="text-secondary mt-3">
+              Quando os dados estão dispersos, decisões importantes dependem de
+              estimativas. Custos fragmentados e falta de visibilidade impedem a
+              medição real das iniciativas de redução.
+            </p>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-uppercase text-empresa fw-bold">
+              A Proposta de Valor
+            </h6>
+            <h3 class="fw-bold text-dark">Apoiar decisões de rentabilidade</h3>
+            <p class="text-secondary mt-3">
+              Organizamos a leitura dos custos para identificar desvios,
+              priorizar ações com base em impacto financeiro real e acompanhar
+              os resultados obtidos na linha do tempo.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- O FLUXOGRAMA DE GESTÃO ESTRATÉGICA -->
+    <section class="py-5 bg-light">
+      <div class="container py-4">
+        <div class="text-center mb-5">
+          <h2 class="fw-bold text-dark">Fluxo de Gestão Estratégica de CDs</h2>
+          <p class="text-secondary">
+            Transformando informações operacionais em decisões gerenciais.
+          </p>
+        </div>
+
+        <div class="row g-4">
+          <!-- Passo 1 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">1.</span> Levantamento
+              </h5>
+              <p class="text-secondary small mb-0">
+                Estrutura, equipe, volumes operacionais e consumo de insumos.
+              </p>
+            </div>
+          </div>
+          <!-- Passo 2 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">2.</span> Mapeamento
+              </h5>
+              <p class="text-secondary small mb-0">
+                Classificação rigorosa de custos fixos, variáveis e despesas
+                operacionais.
+              </p>
+            </div>
+          </div>
+          <!-- Passo 3 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">3.</span> Análise
+              </h5>
+              <p class="text-secondary small mb-0">
+                Monitoramento de indicadores: custo por pedido, posição-palete e
+                m².
+              </p>
+            </div>
+          </div>
+          <!-- Passo 4 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">4.</span> Identificação
+              </h5>
+              <p class="text-secondary small mb-0">
+                Diagnóstico de desvios, gargalos operacionais e oportunidades de
+                economia.
+              </p>
+            </div>
+          </div>
+          <!-- Passo 5 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">5.</span> Plano de Ação
+              </h5>
+              <p class="text-secondary small mb-0">
+                Priorização de tarefas, definição de responsáveis e prazos de
+                execução.
+              </p>
+            </div>
+          </div>
+          <!-- Passo 6 -->
+          <div class="col-md-4">
+            <div class="card step-card h-100 p-3">
+              <h5 class="fw-bold text-dark">
+                <span class="text-empresa me-2">6.</span> Monitoramento
+              </h5>
+              <p class="text-secondary small mb-0">
+                Revisão contínua da economia real alcançada, margem e
+                desempenho.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RODAPÉ -->
+    <footer class="bg-dark text-center py-4 mt-auto">
+      <div class="container">
+        <p class="text-secondary mb-0 small">
+          &copy; 2026 CheckUpLog. Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

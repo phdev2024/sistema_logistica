@@ -453,7 +453,20 @@ def rentabilidade_clientes(cd_id):
 
     return render_template('rentabilidade.html', cd=cd_atual, custo_posicao=custo_posicao, resultados=lista_resultados)
 
+# ==========================================
+# 1. A NOVA VITRINE PÚBLICA (FOLHA DE ROSTO)
+# ==========================================
 @app.route('/')
+def vitrine_publica():
+    # A Pergunta: "O visitante já está logado (tem a chave)?"
+    if current_user.is_authenticated:
+        # A Ordem: "Se ele já fez login, não mostre a propaganda, mande-o direto para o sistema."
+        return redirect(url_for('painel_gerencial'))
+    
+    # A Ordem: "Se é um visitante anônimo, mostre a tela de apresentação."
+    return render_template('landing.html')
+
+@app.route('/painel')
 @login_required
 def painel_gerencial():
     # --- 1. A MÁQUINA DO TEMPO (Filtro) ---

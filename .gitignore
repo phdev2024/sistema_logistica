@@ -16,3 +16,7 @@ instance/*.db
 Thumbs.db
 
 .env
+
+.pdf
+.jpeg
+.pptx
